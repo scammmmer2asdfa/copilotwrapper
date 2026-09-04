@@ -32,6 +32,8 @@ mac:
   extraResources:
     - from: resources/copilot-cli/darwin-${arch}/copilot
       to: copilot-cli/copilot
+    - from: resources/copilot-cli/LICENSE.md
+      to: copilot-cli/LICENSE.md
 
 win:
   target:
@@ -41,6 +43,8 @@ win:
   extraResources:
     - from: resources/copilot-cli/win32-x64/copilot.exe
       to: copilot-cli/copilot.exe
+    - from: resources/copilot-cli/LICENSE.md
+      to: copilot-cli/LICENSE.md
 
 linux:
   target:
@@ -51,6 +55,8 @@ linux:
   extraResources:
     - from: resources/copilot-cli/linux-x64/copilot
       to: copilot-cli/copilot
+    - from: resources/copilot-cli/LICENSE.md
+      to: copilot-cli/LICENSE.md
 
 nsis:
   oneClick: false

@@ -185,3 +185,14 @@ exactly once after all builds finish.
 `site/` is a static multi-page marketing site (`index.html`, `features.html`, `preview.html`,
 `faq.html`, `download.html`, `docs.html`), sharing the app's design tokens (`styles.css`) and theme
 toggle (`theme.js`).
+
+## License
+
+Copilot Desktop's own source code is MIT licensed — see [`LICENSE`](LICENSE).
+
+The vendored `copilot`/`copilot.exe` binaries under `resources/copilot-cli/` are **not** covered by
+that license. They're the official, unmodified GitHub Copilot CLI, proprietary software owned by
+GitHub and distributed here under the terms of its own license — see
+[`resources/copilot-cli/LICENSE.md`](resources/copilot-cli/LICENSE.md) (the exact, unmodified text
+shipped with the published `@github/copilot` npm package), which is also bundled inside every
+packaged installer alongside the binary it covers, as its redistribution terms require.
