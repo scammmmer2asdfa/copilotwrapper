@@ -30,10 +30,14 @@ jobs:
       - run: npm ci
       - run: npm run fetch-cli linux-x64
       - run: npm run build
-      - name: Package & publish (Linux AppImage, x64)
-        run: npx electron-builder --linux --publish always
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Package (Linux AppImage, x64)
+        run: npx electron-builder --linux --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-linux
+          path: |
+            dist/*.AppImage
+            dist/latest-linux.yml
 
   build-windows:
     runs-on: windows-latest
@@ -46,10 +50,15 @@ jobs:
       - run: npm ci
       - run: npm run fetch-cli win32-x64
       - run: npm run build
-      - name: Package & publish (Windows nsis, x64)
-        run: npx electron-builder --win --publish always
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Package (Windows nsis, x64)
+        run: npx electron-builder --win --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-windows
+          path: |
+            dist/*.exe
+            dist/*.exe.blockmap
+            dist/latest.yml
 
   build-macos:
     # arm64 host: builds BOTH arm64 and x64 dmgs in one job (electron-builder
@@ -66,7 +75,33 @@ jobs:
       - run: npm run fetch-cli darwin-arm64
       - run: npm run fetch-cli darwin-x64
       - run: npm run build
-      - name: Package & publish (macOS dmg, arm64 + x64)
-        run: npx electron-builder --mac --arm64 --x64 --publish always
+      - name: Package (macOS dmg, arm64 + x64)
+        run: npx electron-builder --mac --arm64 --x64 --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-macos
+          path: |
+            dist/*.dmg
+            dist/*.dmg.blockmap
+            dist/latest-mac.yml
+
+  # A single job creates the release and uploads every platform's artifacts
+  # together. Building and publishing were previously combined per-platform
+  # (electron-builder --publish always in each job), but three parallel jobs
+  # racing to create/update a release with the same tag produced two
+  # separate draft releases with fragmented assets instead of one. Doing the
+  # publish exactly once, after all builds finish, avoids that race.
+  publish:
+    needs: [build-linux, build-windows, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Create release and upload all platform artifacts
+        run: gh release create "$TAG" artifacts/* --title "$TAG" --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+
