@@ -51,7 +51,10 @@ async function fetchPlatform(platform) {
   await mkdir(tmpDir, { recursive: true });
 
   console.log(`Fetching ${pkg} ...`);
-  const { stdout: packResult } = await execFileAsync('npm', ['pack', pkg, '--silent'], { cwd: tmpDir });
+  // On Windows, `npm` is a npm.cmd shim; execFile needs the concrete
+  // executable name rather than shell:true (which doesn't escape args).
+  const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  const { stdout: packResult } = await execFileAsync(npmCmd, ['pack', pkg, '--silent'], { cwd: tmpDir });
   const tarballName = packResult.trim().split('\n').pop();
   const tarballPath = join(tmpDir, tarballName);
 
