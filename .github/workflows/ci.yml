@@ -52,3 +52,47 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Electron + Xvfb runtime libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libnss3 libatk1.0-0 libatk-bridge2.0-0 libgtk-3-0 libgbm1 \
+            libasound2t64 libxss1 libxtst6 xvfb
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Make vendored CLI executable
+        run: chmod +x resources/copilot-cli/linux-x64/copilot
+
+      - name: Build
+        run: npm run build
+
+      # Playwright drives the real, built Electron app (not a mock) -
+      # launches it, clicks through the setup wizard/settings/terminal, and
+      # asserts on the actual rendered DOM + connection state. Needs a
+      # virtual display since Electron isn't truly headless.
+      - name: Run Playwright E2E suite
+        run: xvfb-run -a npx playwright test
+
+      - name: Upload E2E screenshots + report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots
+          path: |
+            test-results/
+            playwright-report/

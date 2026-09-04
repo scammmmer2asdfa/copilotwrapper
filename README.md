@@ -109,6 +109,18 @@ npm test
 npm run dev
 ```
 
+### E2E tests
+
+`test/e2e/` is a real end-to-end suite (Playwright's Electron support) that launches the actual built
+app, not a mock: it drives the real first-run setup wizard, opens Settings and switches theme, opens
+the terminal panel, and asserts the app actually reaches `connected` against the real
+`copilot --acp` subprocess.
+
+```sh
+npm run build
+npm run test:e2e
+```
+
 Nothing else is required for a fresh clone — the CLI binaries for all 4 platforms
 (`darwin-arm64`/`darwin-x64`/`win32-x64`/`linux-x64`) are vendored directly in this repo under
 `resources/copilot-cli/` via **Git LFS**, so `git clone` (with LFS support) gets you a fully working

@@ -87,7 +87,7 @@ export function SettingsPanel(props: Props): React.JSX.Element {
 
         <section>
           <h4>Editor</h4>
-          <select value={editor} onChange={(e) => onChange({ editor: e.target.value as EditorId })}>
+          <select aria-label="Editor" value={editor} onChange={(e) => onChange({ editor: e.target.value as EditorId })}>
             {EDITOR_OPTIONS.map((o) => (
               <option key={o.id} value={o.id}>
                 {o.label}
@@ -105,7 +105,7 @@ export function SettingsPanel(props: Props): React.JSX.Element {
 
         <section>
           <h4>Theme</h4>
-          <select value={theme} onChange={(e) => onChange({ theme: e.target.value as ThemeId })}>
+          <select aria-label="Theme" value={theme} onChange={(e) => onChange({ theme: e.target.value as ThemeId })}>
             {THEMES.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.label}

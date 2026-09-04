@@ -19,6 +19,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.web.json",
     "lint": "eslint . --ext .ts,.tsx",
     "test": "cross-env ELECTRON_RUN_AS_NODE=1 electron ./node_modules/vitest/vitest.mjs run",
+    "test:e2e": "playwright test",
     "fetch-cli": "node scripts/fetch-cli.mjs",
     "dist": "npm run build && electron-builder --config electron-builder.yml"
   },
@@ -32,6 +33,7 @@
   },
   "devDependencies": {
     "@electron/rebuild": "^4.2.0",
+    "@playwright/test": "^1.62.1",
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^20.14.9",
     "@types/react": "^18.3.11",
