@@ -7,6 +7,12 @@ files:
   - out/**/*
   - package.json
 asar: true
+# Native addons (better-sqlite3's .node binary) can't be dlopen'd from inside
+# the asar virtual filesystem — they must live as real files on disk.
+# Electron's require() patch resolves these transparently at the same
+# in-package path, redirected into app.asar.unpacked.
+asarUnpack:
+  - '**/*.node'
 
 publish:
   provider: github
