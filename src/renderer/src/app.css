@@ -11,6 +11,23 @@
   grid-template-columns: 56px 1fr 240px;
 }
 
+.connection-error-banner {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg-raised);
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  font-size: 13px;
+  max-width: 640px;
+}
+
 .error-boundary {
   height: 100vh;
   display: flex;
@@ -38,10 +55,14 @@
 }
 
 .icon-rail__new,
+.icon-rail__terminal,
 .icon-rail__settings {
   width: 36px;
   height: 36px;
   border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .icon-rail__list {
@@ -114,7 +135,16 @@
 
 .plan-item {
   display: flex;
+  align-items: center;
   gap: 8px;
+}
+
+.plan-item__status {
+  display: inline-flex;
+}
+
+.tool-icon {
+  vertical-align: -2px;
 }
 
 .plan-item--completed {
@@ -328,12 +358,6 @@
   white-space: pre-wrap;
 }
 
-.icon-rail__terminal {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-}
-
 .bottom-panel {
   height: 260px;
   border-top: 1px solid var(--border);
@@ -364,6 +388,8 @@
 
 .bottom-panel__close {
   margin-left: auto;
+  display: flex;
+  align-items: center;
 }
 
 .bottom-panel__body {

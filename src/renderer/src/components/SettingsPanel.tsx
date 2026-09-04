@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { EditorId } from '../../../main/editor';
 import { THEMES, type ThemeId } from '../themes';
+import { useEscapeKey } from '../useEscapeKey';
 
 interface McpServerRow {
   name: string;
@@ -53,6 +54,8 @@ export function SettingsPanel(props: Props): React.JSX.Element {
       setInstructionsStatus('idle');
     });
   }, [cwd]);
+
+  useEscapeKey(onClose);
 
   return (
     <div className="modal-overlay">

@@ -81,13 +81,25 @@ test.describe.serial('Copilot Desktop', () => {
 
   test('opens the terminal panel with Terminal and Agent Output tabs', async () => {
     await window.locator('.icon-rail__terminal').click();
-    await expect(window.locator('.bottom-panel')).toBeVisible();
-    await expect(window.getByRole('button', { name: 'Terminal' })).toBeVisible();
-    await expect(window.getByRole('button', { name: 'Agent Output' })).toBeVisible();
+    const bottomPanel = window.locator('.bottom-panel');
+    await expect(bottomPanel).toBeVisible();
+    await expect(bottomPanel.getByRole('button', { name: 'Terminal' })).toBeVisible();
+    await expect(bottomPanel.getByRole('button', { name: 'Agent Output' })).toBeVisible();
     await window.screenshot({ path: 'test-results/screenshots/05-terminal-panel.png' });
 
-    await window.getByRole('button', { name: 'Agent Output' }).click();
+    await bottomPanel.getByRole('button', { name: 'Agent Output' }).click();
     await expect(window.locator('.bottom-panel__output')).toBeVisible();
     await window.screenshot({ path: 'test-results/screenshots/06-agent-output.png' });
+
+    // Escape closes it while the Agent Output (non-interactive) tab is active.
+    await window.keyboard.press('Escape');
+    await expect(bottomPanel).toBeHidden();
+  });
+
+  test('Escape closes the settings panel', async () => {
+    await window.locator('.icon-rail__settings').click();
+    await expect(window.getByRole('heading', { name: 'Settings' })).toBeVisible();
+    await window.keyboard.press('Escape');
+    await expect(window.getByRole('heading', { name: 'Settings' })).toBeHidden();
   });
 });

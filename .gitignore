@@ -4,6 +4,7 @@ dist/
 .tmp-fetch-cli/
 test-results/
 playwright-report/
+.vscode/
 *.log
 .DS_Store
 *.sqlite

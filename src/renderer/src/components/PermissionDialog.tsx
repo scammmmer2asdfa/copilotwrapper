@@ -1,4 +1,5 @@
 import React from 'react';
+import { useEscapeKey } from '../useEscapeKey';
 
 export interface PermissionOptionView {
   optionId: string;
@@ -17,6 +18,8 @@ interface Props {
  * in the session can proceed until the user (or a cancel) resolves this.
  */
 export function PermissionDialog({ toolTitle, options, onChoose }: Props): React.JSX.Element {
+  useEscapeKey(() => onChoose(null));
+
   return (
     <div className="modal-overlay">
       <div className="modal">

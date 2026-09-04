@@ -1,5 +1,6 @@
 import React from 'react';
 import type { SessionSummary } from '../../../shared/ipc';
+import { Icon } from './Icon';
 
 interface Props {
   sessions: SessionSummary[];
@@ -14,7 +15,7 @@ export function IconRail({ sessions, activeId, onSelect, onNew, onSettings, onTo
   return (
     <div className="icon-rail">
       <button className="icon-rail__new" onClick={onNew} title="New session">
-        +
+        <Icon name="plus" />
       </button>
       <div className="icon-rail__list">
         {sessions.map((s) => (
@@ -29,10 +30,10 @@ export function IconRail({ sessions, activeId, onSelect, onNew, onSettings, onTo
         ))}
       </div>
       <button className="icon-rail__terminal" onClick={onToggleTerminal} title="Terminal">
-        ▤
+        <Icon name="terminal" />
       </button>
       <button className="icon-rail__settings" onClick={onSettings} title="Settings">
-        ⚙
+        <Icon name="settings" />
       </button>
     </div>
   );

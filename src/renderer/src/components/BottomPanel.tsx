@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { TerminalPanel } from './TerminalPanel';
+import { Icon } from './Icon';
+import { useEscapeKey } from '../useEscapeKey';
 
 interface Props {
   cwd: string;
@@ -21,6 +23,10 @@ export function BottomPanel({ cwd, onClose }: Props): React.JSX.Element {
     outputRef.current?.scrollTo({ top: outputRef.current.scrollHeight });
   }, [agentOutput, tab]);
 
+  // Only close on Escape when the terminal itself isn't focused - a real
+  // shell (or vim, etc.) needs Escape to reach it, not close the panel.
+  useEscapeKey(onClose, tab === 'agent-output');
+
   return (
     <div className="bottom-panel">
       <div className="bottom-panel__tabs">
@@ -31,7 +37,7 @@ export function BottomPanel({ cwd, onClose }: Props): React.JSX.Element {
           Agent Output
         </button>
         <button className="bottom-panel__close" onClick={onClose} title="Close panel">
-          ✕
+          <Icon name="close" size={14} />
         </button>
       </div>
       <div className="bottom-panel__body" style={{ display: tab === 'terminal' ? 'block' : 'none' }}>

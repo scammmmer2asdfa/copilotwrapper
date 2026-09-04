@@ -36,6 +36,7 @@ export function App(): React.JSX.Element {
   const [currentModeId, setCurrentModeId] = useState<string | null>(null);
   const [pendingPermission, setPendingPermission] = useState<PendingPermission | null>(null);
   const [needsAuth, setNeedsAuth] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const [authCode, setAuthCode] = useState<string | null>(null);
   const [authUrl, setAuthUrl] = useState<string | null>(null);
   const [authRunning, setAuthRunning] = useState(false);
@@ -61,7 +62,6 @@ export function App(): React.JSX.Element {
 
     const offConnect = api.agent.onConnectState((state: string) => {
       setConnectState(state);
-      if (state === 'error') setNeedsAuth(true);
     });
 
     const offUpdate = api.chat.onSessionUpdate((raw: unknown) => {
@@ -110,12 +110,13 @@ export function App(): React.JSX.Element {
       setSetupDone(settings['setupCompleted'] === 'true');
 
       try {
-        const initResult = (await api.agent.start(await getCwd())) as {
-          authMethods?: unknown[];
-        };
-        if (!initResult) setNeedsAuth(true);
-      } catch {
-        setNeedsAuth(true);
+        await api.agent.start(await getCwd());
+        setConnectionError(null);
+      } catch (err) {
+        // initialize() succeeds regardless of sign-in state - a failure here
+        // is a real connection problem (wrong CLI path, crash, etc.), not an
+        // auth issue, so it must not show the sign-in panel.
+        setConnectionError(err instanceof Error ? err.message : String(err));
       }
 
       const existing = await api.sessions.list();
@@ -139,16 +140,28 @@ export function App(): React.JSX.Element {
 
   const handleNewSession = useCallback(async () => {
     const cwd = await getCwd();
-    const result = (await window.copilotDesktop.sessions.create(cwd)) as {
-      sessionId: string;
-      modes?: { availableModes: { id: string; name: string }[]; currentModeId: string };
-    };
-    const list = await window.copilotDesktop.sessions.list();
-    setSessions(list);
-    setActiveId(result.sessionId);
-    if (result.modes) {
-      setModes(result.modes.availableModes);
-      setCurrentModeId(result.modes.currentModeId);
+    try {
+      const result = (await window.copilotDesktop.sessions.create(cwd)) as {
+        sessionId: string;
+        modes?: { availableModes: { id: string; name: string }[]; currentModeId: string };
+      };
+      const list = await window.copilotDesktop.sessions.list();
+      setSessions(list);
+      setActiveId(result.sessionId);
+      if (result.modes) {
+        setModes(result.modes.availableModes);
+        setCurrentModeId(result.modes.currentModeId);
+      }
+    } catch (err) {
+      // This is the actual, correct signal that sign-in is needed - the CLI
+      // itself rejects session creation, rather than us guessing from an
+      // unrelated connection failure.
+      const message = err instanceof Error ? err.message : String(err);
+      if (/authentication required/i.test(message)) {
+        setNeedsAuth(true);
+      } else {
+        setConnectionError(message);
+      }
     }
   }, [getCwd]);
 
@@ -226,6 +239,25 @@ export function App(): React.JSX.Element {
       </div>
 
       {bottomPanelOpen && <BottomPanel cwd={activeCwd} onClose={() => setBottomPanelOpen(false)} />}
+
+      {connectionError && (
+        <div className="connection-error-banner">
+          <span>Couldn't connect to the Copilot CLI: {connectionError}</span>
+          <button
+            onClick={async () => {
+              setConnectionError(null);
+              try {
+                await window.copilotDesktop.agent.start(await getCwd());
+              } catch (err) {
+                setConnectionError(err instanceof Error ? err.message : String(err));
+              }
+            }}
+          >
+            Retry
+          </button>
+          <button onClick={() => setConnectionError(null)}>Dismiss</button>
+        </div>
+      )}
 
       {setupDone === false && (
         <SetupWizard

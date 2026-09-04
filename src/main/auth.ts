@@ -22,9 +22,16 @@ export class AuthRunner extends EventEmitter {
   private child: ReturnType<typeof spawn> | null = null;
   private codeEmitted = false;
 
-  run(meta: TerminalAuthMeta): void {
+  run(meta: TerminalAuthMeta, env: NodeJS.ProcessEnv = process.env): void {
     this.codeEmitted = false;
-    this.child = spawn(meta.command, meta.args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    // The CLI defaults to a browser-based web flow on a local desktop (only
+    // headless/remote environments default to printing a device code) - this
+    // app's UI only knows how to show a device code, so force that flow
+    // explicitly regardless of platform/environment. Verified against the
+    // real CLI: --device-code prints
+    // "To authenticate, visit <url> and enter code XXXX-XXXX".
+    const args = meta.args.includes('--device-code') ? meta.args : [...meta.args, '--device-code'];
+    this.child = spawn(meta.command, args, { stdio: ['ignore', 'pipe', 'pipe'], env });
 
     const onData = (chunk: Buffer) => {
       const text = chunk.toString('utf8');

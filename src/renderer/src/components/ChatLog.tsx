@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import type { LogEntry } from '../log-model';
+import { Icon } from './Icon';
 
 interface Props {
   entries: LogEntry[];
@@ -73,7 +74,9 @@ function LogEntryView({ entry }: { entry: LogEntry }): React.JSX.Element {
         <div className="log-entry log-entry--plan">
           {entry.entries.map((p, i) => (
             <div key={i} className={`plan-item plan-item--${p.status}`}>
-              <span className="plan-item__status">{p.status === 'completed' ? '✓' : p.status === 'in_progress' ? '…' : '○'}</span>
+              <span className="plan-item__status">
+                <Icon name={p.status === 'completed' ? 'check-circle' : p.status === 'in_progress' ? 'loader' : 'circle'} size={14} />
+              </span>
               {p.content}
             </div>
           ))}
@@ -82,7 +85,8 @@ function LogEntryView({ entry }: { entry: LogEntry }): React.JSX.Element {
     case 'tool':
       return (
         <div className={`log-entry log-entry--tool log-entry--tool-${entry.status}`}>
-          🔧 {entry.title} <span className="tool-status">{entry.status}</span>
+          <Icon name="wrench" size={14} className="tool-icon" /> {entry.title}{' '}
+          <span className="tool-status">{entry.status}</span>
         </div>
       );
   }

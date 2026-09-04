@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useEscapeKey } from '../useEscapeKey';
 
 interface EnvironmentStatus {
   nodeVersion: string | null;
@@ -34,6 +35,8 @@ export function SetupWizard({ onContinue }: Props): React.JSX.Element {
       offDone();
     };
   }, []);
+
+  useEscapeKey(onContinue);
 
   return (
     <div className="overlay-panel">
