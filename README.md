@@ -40,4 +40,6 @@ release pipeline.
 
 ## Site
 
-`site/` is a static marketing page (`site/index.html`), sharing the app's design tokens.
+`site/` is a static multi-page marketing site (`index.html`, `features.html`, `preview.html`,
+`faq.html`, `download.html`), sharing the app's design tokens (`styles.css`) and theme toggle
+(`theme.js`).

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en" data-theme="graphite">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Features — Copilot Desktop</title>
+    <meta
+      name="description"
+      content="What Copilot Desktop actually does: real ACP, a durable send queue, permission prompts, editor handoff, and shared design tokens."
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header__brand">Copilot Desktop</div>
+      <nav class="site-header__nav">
+        <a href="index.html">Home</a>
+        <a href="features.html" class="active">Features</a>
+        <a href="preview.html">Preview</a>
+        <a href="faq.html">FAQ</a>
+        <a href="download.html">Download</a>
+        <a href="https://github.com/scammmmer2asdfa/copilotwrapper">Source</a>
+      </nav>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">◑</button>
+    </header>
+
+    <main>
+      <section class="page-header">
+        <h1>Features</h1>
+        <p class="page-header__sub">What Copilot Desktop actually does, not what any AI chat app says it does.</p>
+      </section>
+
+      <section id="features" class="features">
+        <div class="feature">
+          <h3>Real ACP, not a guess</h3>
+          <p>
+            Speaks newline-delimited JSON-RPC directly to <code>copilot --acp</code>: initialize,
+            session/new, session/prompt, live session/update streaming, and permission requests.
+          </p>
+        </div>
+        <div class="feature">
+          <h3>Never drops a message</h3>
+          <p>
+            Messages sent mid-turn are queued per-session in SQLite and dispatched in order once the
+            current turn finishes — including recovery if the app crashes mid-send.
+          </p>
+        </div>
+        <div class="feature">
+          <h3>Your editor, your call</h3>
+          <p>
+            Jump from a tool call straight into VS Code, Cursor, Zed, Sublime, WebStorm, vim, or any
+            custom binary you configure.
+          </p>
+        </div>
+        <div class="feature">
+          <h3>You approve every tool call</h3>
+          <p>
+            Permission requests from the agent block the turn until you respond — allow once, allow
+            always, or reject — right where the tool call happened.
+          </p>
+        </div>
+        <div class="feature">
+          <h3>Sign in, no tokens in sight</h3>
+          <p>
+            Runs the CLI's own <code>copilot login</code> device-code flow and shows you the code.
+            The token exchange stays entirely inside the CLI process.
+          </p>
+        </div>
+        <div class="feature">
+          <h3>Two themes, one token set</h3>
+          <p>
+            Graphite and Paper are both driven by the same CSS custom properties — the app and this
+            site share the exact same design tokens.
+          </p>
+        </div>
+      </section>
+
+      <section id="how-it-works" class="how-it-works">
+        <h2>How it works</h2>
+        <ol class="steps">
+          <li>
+            <span class="steps__index">1</span>
+            <div>
+              <h4>Spawn the real CLI</h4>
+              <p>The Electron main process launches <code>copilot --acp</code> as a child process.</p>
+            </div>
+          </li>
+          <li>
+            <span class="steps__index">2</span>
+            <div>
+              <h4>Speak its protocol</h4>
+              <p>
+                Newline-delimited JSON-RPC over stdio — <code>initialize</code>, <code>session/new</code>,
+                <code>session/prompt</code> — with streamed <code>session/update</code> notifications.
+              </p>
+            </div>
+          </li>
+          <li>
+            <span class="steps__index">3</span>
+            <div>
+              <h4>Render it properly</h4>
+              <p>
+                Agent messages, thoughts, plans and tool calls land in a real React UI, not a terminal
+                pane.
+              </p>
+            </div>
+          </li>
+        </ol>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="site-footer__row">
+        <span>Copilot Desktop is an independent client. Not affiliated with GitHub.</span>
+        <nav class="site-footer__links">
+          <a href="https://github.com/scammmmer2asdfa/copilotwrapper">GitHub</a>
+          <a href="https://github.com/scammmmer2asdfa/copilotwrapper/releases">Releases</a>
+          <a href="https://github.com/scammmmer2asdfa/copilotwrapper/blob/main/LICENSE">License</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script src="theme.js"></script>
+  </body>
+</html>

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en" data-theme="graphite">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FAQ — Copilot Desktop</title>
+    <meta name="description" content="What Copilot Desktop is, what it isn't, and where your data lives." />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header__brand">Copilot Desktop</div>
+      <nav class="site-header__nav">
+        <a href="index.html">Home</a>
+        <a href="features.html">Features</a>
+        <a href="preview.html">Preview</a>
+        <a href="faq.html" class="active">FAQ</a>
+        <a href="download.html">Download</a>
+        <a href="https://github.com/scammmmer2asdfa/copilotwrapper">Source</a>
+      </nav>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">◑</button>
+    </header>
+
+    <main>
+      <section class="page-header">
+        <h1>FAQ</h1>
+      </section>
+
+      <section class="faq">
+        <details>
+          <summary>Is this an official GitHub product?</summary>
+          <p>No. Copilot Desktop is an independent, unofficial client that wraps the official
+            <code>@github/copilot</code> CLI. It is not affiliated with or endorsed by GitHub.</p>
+        </details>
+        <details>
+          <summary>Do I need my own Copilot subscription?</summary>
+          <p>Yes — the app shells out to the real CLI's own login and subscription checks; it doesn't
+            provide any access on its own.</p>
+        </details>
+        <details>
+          <summary>Where does my code and chat history live?</summary>
+          <p>Locally, in a SQLite database in your OS's app-data directory. Nothing is sent anywhere
+            except what the Copilot CLI itself sends as part of a normal session.</p>
+        </details>
+        <details>
+          <summary>Which platforms are supported?</summary>
+          <p>macOS (Apple Silicon and Intel), Windows x64, and Linux x64, each bundling only its own
+            platform's CLI binary.</p>
+        </details>
+        <details>
+          <summary>How do I get the CLI itself?</summary>
+          <p>You don't have to — the app bundles it. <code>scripts/fetch-cli.mjs</code> downloads the
+            official per-platform <code>@github/copilot-&lt;platform&gt;</code> package for whichever
+            installer you run.</p>
+        </details>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="site-footer__row">
+        <span>Copilot Desktop is an independent client. Not affiliated with GitHub.</span>
+        <nav class="site-footer__links">
+          <a href="https://github.com/scammmmer2asdfa/copilotwrapper">GitHub</a>
+          <a href="https://github.com/scammmmer2asdfa/copilotwrapper/releases">Releases</a>
+          <a href="https://github.com/scammmmer2asdfa/copilotwrapper/blob/main/LICENSE">License</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script src="theme.js"></script>
+  </body>
+</html>

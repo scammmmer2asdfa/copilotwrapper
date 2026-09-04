@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en" data-theme="graphite">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Preview — Copilot Desktop</title>
+    <meta name="description" content="A look at the Copilot Desktop UI: session rail, chat log, and status rail." />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header__brand">Copilot Desktop</div>
+      <nav class="site-header__nav">
+        <a href="index.html">Home</a>
+        <a href="features.html">Features</a>
+        <a href="preview.html" class="active">Preview</a>
+        <a href="faq.html">FAQ</a>
+        <a href="download.html">Download</a>
+        <a href="https://github.com/scammmmer2asdfa/copilotwrapper">Source</a>
+      </nav>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">◑</button>
+    </header>
+
+    <main>
+      <section class="page-header">
+        <h1>Preview</h1>
+        <p class="page-header__sub">Session rail on the left, chat log in the middle, live status on the right.</p>
+      </section>
+
+      <section class="preview">
+        <div class="mock-window" aria-hidden="true">
+          <div class="mock-window__titlebar">
+            <span class="mock-dot mock-dot--red"></span>
+            <span class="mock-dot mock-dot--yellow"></span>
+            <span class="mock-dot mock-dot--green"></span>
+          </div>
+          <div class="mock-window__body">
+            <div class="mock-rail">
+              <div class="mock-icon mock-icon--active">CD</div>
+              <div class="mock-icon">S2</div>
+              <div class="mock-icon">S3</div>
+            </div>
+            <div class="mock-log">
+              <div class="mock-bubble mock-bubble--user">refactor the queue drain loop</div>
+              <div class="mock-bubble mock-bubble--agent">Reading src/main/agent-manager.ts…</div>
+              <div class="mock-bubble mock-bubble--tool">🔧 read_file · completed</div>
+              <div class="mock-bubble mock-bubble--agent">Done — queue now drains one item at a time.</div>
+            </div>
+            <div class="mock-status">
+              <div><span class="mock-status__label">Connection</span><span class="mock-pill">connected</span></div>
+              <div><span class="mock-status__label">Queue</span><span>0 pending</span></div>
+              <div><span class="mock-status__label">Mode</span><span>Agent</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="site-footer__row">
+        <span>Copilot Desktop is an independent client. Not affiliated with GitHub.</span>
+        <nav class="site-footer__links">
+          <a href="https://github.com/scammmmer2asdfa/copilotwrapper">GitHub</a>
+          <a href="https://github.com/scammmmer2asdfa/copilotwrapper/releases">Releases</a>
+          <a href="https://github.com/scammmmer2asdfa/copilotwrapper/blob/main/LICENSE">License</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script src="theme.js"></script>
+  </body>
+</html>
