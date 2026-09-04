@@ -31,6 +31,49 @@
   --success: #1a7f37;
 }
 
+/* GitHub's own Primer color tokens (github.com/primer/primitives, MIT), matching VS Code's GitHub Theme extension. */
+[data-theme='github-dark'] {
+  --bg: #0d1117;
+  --bg-raised: #161b22;
+  --bg-sunken: #010409;
+  --border: #30363d;
+  --fg: #e6edf3;
+  --fg-muted: #7d8590;
+  --accent: #2f81f7;
+  --accent-fg: #ffffff;
+  --danger: #f85149;
+  --warning: #d29922;
+  --success: #3fb950;
+}
+
+[data-theme='github-dark-dimmed'] {
+  --bg: #22272e;
+  --bg-raised: #2d333b;
+  --bg-sunken: #1c2128;
+  --border: #444c56;
+  --fg: #adbac7;
+  --fg-muted: #768390;
+  --accent: #539bf5;
+  --accent-fg: #0d1117;
+  --danger: #e5534b;
+  --warning: #c69026;
+  --success: #57ab5a;
+}
+
+[data-theme='github-light'] {
+  --bg: #ffffff;
+  --bg-raised: #f6f8fa;
+  --bg-sunken: #eaeef2;
+  --border: #d0d7de;
+  --fg: #1f2328;
+  --fg-muted: #656d76;
+  --accent: #0969da;
+  --accent-fg: #ffffff;
+  --danger: #d1242f;
+  --warning: #9a6700;
+  --success: #1a7f37;
+}
+
 * {
   box-sizing: border-box;
 }

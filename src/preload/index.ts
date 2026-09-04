@@ -71,12 +71,47 @@ const api = {
 
   files: {
     openInEditor: (config: EditorConfig, filePath: string, line?: number) =>
-      ipcRenderer.invoke(IPC.filesOpenInEditor, config, filePath, line)
+      ipcRenderer.invoke(IPC.filesOpenInEditor, config, filePath, line),
+    readInstructions: (cwd: string) => ipcRenderer.invoke(IPC.filesReadInstructions, cwd),
+    writeInstructions: (cwd: string, content: string) => ipcRenderer.invoke(IPC.filesWriteInstructions, cwd, content)
   },
 
   dialog: {
     chooseDirectory: () => ipcRenderer.invoke(IPC.dialogChooseDirectory),
     chooseFile: () => ipcRenderer.invoke(IPC.dialogChooseFile)
+  },
+
+  environment: {
+    check: () => ipcRenderer.invoke(IPC.environmentCheck),
+    installCli: () => ipcRenderer.invoke(IPC.environmentInstallCli),
+    onInstallOutput: (cb: (chunk: string) => void) => {
+      const listener = (_e: unknown, chunk: string) => cb(chunk);
+      ipcRenderer.on(IPC.environmentInstallOutput, listener);
+      return () => ipcRenderer.removeListener(IPC.environmentInstallOutput, listener);
+    },
+    onInstallDone: (cb: (success: boolean) => void) => {
+      const listener = (_e: unknown, success: boolean) => cb(success);
+      ipcRenderer.on(IPC.environmentInstallDone, listener);
+      return () => ipcRenderer.removeListener(IPC.environmentInstallDone, listener);
+    }
+  },
+
+  terminal: {
+    create: (id: string, cwd: string, cols: number, rows: number) =>
+      ipcRenderer.invoke(IPC.terminalCreate, id, cwd, cols, rows),
+    write: (id: string, data: string) => ipcRenderer.send(IPC.terminalWrite, id, data),
+    resize: (id: string, cols: number, rows: number) => ipcRenderer.send(IPC.terminalResize, id, cols, rows),
+    kill: (id: string) => ipcRenderer.send(IPC.terminalKill, id),
+    onData: (cb: (id: string, chunk: string) => void) => {
+      const listener = (_e: unknown, id: string, chunk: string) => cb(id, chunk);
+      ipcRenderer.on(IPC.terminalData, listener);
+      return () => ipcRenderer.removeListener(IPC.terminalData, listener);
+    },
+    onExit: (cb: (id: string, code: number) => void) => {
+      const listener = (_e: unknown, id: string, code: number) => cb(id, code);
+      ipcRenderer.on(IPC.terminalExit, listener);
+      return () => ipcRenderer.removeListener(IPC.terminalExit, listener);
+    }
   }
 };
 

@@ -14,6 +14,7 @@
         <a href="index.html">Home</a>
         <a href="features.html">Features</a>
         <a href="preview.html">Preview</a>
+        <a href="docs.html">Docs</a>
         <a href="faq.html" class="active">FAQ</a>
         <a href="download.html">Download</a>
         <a href="https://github.com/scammmmer2asdfa/copilotwrapper">Source</a>
@@ -49,9 +50,38 @@
         </details>
         <details>
           <summary>How do I get the CLI itself?</summary>
-          <p>You don't have to — the app bundles it. <code>scripts/fetch-cli.mjs</code> downloads the
-            official per-platform <code>@github/copilot-&lt;platform&gt;</code> package for whichever
-            installer you run.</p>
+          <p>You don't have to — the app bundles it. The actual <code>copilot</code> executables for
+            all four supported platforms are committed directly in this repository (via Git LFS)
+            under <code>resources/copilot-cli/</code>, so every installer and every dev clone already
+            has what it needs with no separate download step.</p>
+        </details>
+        <details>
+          <summary>Is there a real terminal in the app, or just a log?</summary>
+          <p>A real one. The bottom panel's Terminal tab is backed by
+            <a href="https://www.npmjs.com/package/node-pty">node-pty</a> spawning an actual shell
+            process, rendered with <a href="https://xtermjs.org/">xterm.js</a> — the same combination
+            VS Code's own integrated terminal uses. It runs independently of whatever the agent is
+            doing. The Agent Output tab next to it is different: a live, read-only stream of the
+            agent subprocess's own stderr.</p>
+        </details>
+        <details>
+          <summary>Can I give the agent project-specific rules?</summary>
+          <p>Yes — Settings → Agent instructions reads and writes
+            <code>.github/copilot-instructions.md</code> in the current session's directory, the same
+            file the CLI's own <code>/init</code> command and repo-level instruction loading use.</p>
+        </details>
+        <details>
+          <summary>What themes are available?</summary>
+          <p>Graphite and Paper (this app's own two), plus GitHub Dark, GitHub Dark Dimmed, and GitHub
+            Light — real palettes from GitHub's public Primer design tokens, matching VS Code's own
+            GitHub Theme extension.</p>
+        </details>
+        <details>
+          <summary>Does it check whether I have Node.js or the CLI installed?</summary>
+          <p>On first launch, a setup screen shows what's detected: the bundled CLI (always present),
+            any <code>copilot</code> already on your <code>PATH</code>, and your system Node.js/npm
+            versions — with a one-click option to install the CLI globally if you want to use it from
+            your own terminal too.</p>
         </details>
         <details>
           <summary>macOS says the app "contains malware" / won't open — what do I do?</summary>

@@ -7,9 +7,10 @@ interface Props {
   onSelect: (id: string) => void;
   onNew: () => void;
   onSettings: () => void;
+  onToggleTerminal: () => void;
 }
 
-export function IconRail({ sessions, activeId, onSelect, onNew, onSettings }: Props): React.JSX.Element {
+export function IconRail({ sessions, activeId, onSelect, onNew, onSettings, onToggleTerminal }: Props): React.JSX.Element {
   return (
     <div className="icon-rail">
       <button className="icon-rail__new" onClick={onNew} title="New session">
@@ -27,6 +28,9 @@ export function IconRail({ sessions, activeId, onSelect, onNew, onSettings }: Pr
           </button>
         ))}
       </div>
+      <button className="icon-rail__terminal" onClick={onToggleTerminal} title="Terminal">
+        ▤
+      </button>
       <button className="icon-rail__settings" onClick={onSettings} title="Settings">
         ⚙
       </button>

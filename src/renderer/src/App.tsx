@@ -7,7 +7,10 @@ import { StatusRail } from './components/StatusRail';
 import { PermissionDialog, type PermissionOptionView } from './components/PermissionDialog';
 import { AuthPanel } from './components/AuthPanel';
 import { SettingsPanel } from './components/SettingsPanel';
+import { SetupWizard } from './components/SetupWizard';
+import { BottomPanel } from './components/BottomPanel';
 import { applySessionUpdate, type LogEntry } from './log-model';
+import type { ThemeId } from './themes';
 import './app.css';
 
 interface PendingPermission {
@@ -40,11 +43,14 @@ export function App(): React.JSX.Element {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editor, setEditor] = useState<EditorId>('vscode');
   const [customBinary, setCustomBinary] = useState('');
-  const [theme, setTheme] = useState<'graphite' | 'paper'>('graphite');
+  const [theme, setTheme] = useState<ThemeId>('graphite');
   const [mcpServers, setMcpServers] = useState<McpServerRow[]>([]);
   const [cliPath, setCliPath] = useState('');
+  const [setupDone, setSetupDone] = useState<boolean | null>(null);
+  const [bottomPanelOpen, setBottomPanelOpen] = useState(false);
 
   const activeLog = useMemo(() => (activeId ? logsBySession[activeId] ?? [] : []), [activeId, logsBySession]);
+  const activeCwd = useMemo(() => sessions.find((s) => s.id === activeId)?.cwd ?? '.', [sessions, activeId]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -98,9 +104,10 @@ export function App(): React.JSX.Element {
       const settings = await api.settings.getAll();
       if (settings['editor']) setEditor(settings['editor'] as EditorId);
       if (settings['customBinary']) setCustomBinary(settings['customBinary']);
-      if (settings['theme']) setTheme(settings['theme'] as 'graphite' | 'paper');
+      if (settings['theme']) setTheme(settings['theme'] as ThemeId);
       if (settings['mcpServers']) setMcpServers(JSON.parse(settings['mcpServers']));
       if (settings['cliPath']) setCliPath(settings['cliPath']);
+      setSetupDone(settings['setupCompleted'] === 'true');
 
       try {
         const initResult = (await api.agent.start(await getCwd())) as {
@@ -189,31 +196,45 @@ export function App(): React.JSX.Element {
 
   return (
     <div className="app">
-      <IconRail
-        sessions={sessions}
-        activeId={activeId}
-        onSelect={setActiveId}
-        onNew={handleNewSession}
-        onSettings={() => setSettingsOpen(true)}
-      />
+      <div className="app__main">
+        <IconRail
+          sessions={sessions}
+          activeId={activeId}
+          onSelect={setActiveId}
+          onNew={handleNewSession}
+          onSettings={() => setSettingsOpen(true)}
+          onToggleTerminal={() => setBottomPanelOpen((v) => !v)}
+        />
 
-      <ChatLog
-        entries={activeLog}
-        input={input}
-        onInputChange={setInput}
-        onSend={handleSend}
-        onCancel={handleCancel}
-        canSend={connectState === 'connected' && !!activeId}
-        turnInFlight={turnInFlight}
-      />
+        <ChatLog
+          entries={activeLog}
+          input={input}
+          onInputChange={setInput}
+          onSend={handleSend}
+          onCancel={handleCancel}
+          canSend={connectState === 'connected' && !!activeId}
+          turnInFlight={turnInFlight}
+        />
 
-      <StatusRail
-        connectState={connectState}
-        queueDepth={queueDepth}
-        modes={modes}
-        currentModeId={currentModeId}
-        onModeChange={handleModeChange}
-      />
+        <StatusRail
+          connectState={connectState}
+          queueDepth={queueDepth}
+          modes={modes}
+          currentModeId={currentModeId}
+          onModeChange={handleModeChange}
+        />
+      </div>
+
+      {bottomPanelOpen && <BottomPanel cwd={activeCwd} onClose={() => setBottomPanelOpen(false)} />}
+
+      {setupDone === false && (
+        <SetupWizard
+          onContinue={() => {
+            setSetupDone(true);
+            persistSettings({ setupCompleted: 'true' });
+          }}
+        />
+      )}
 
       {needsAuth && (
         <div className="overlay-panel">
@@ -250,6 +271,7 @@ export function App(): React.JSX.Element {
           theme={theme}
           mcpServers={mcpServers}
           cliPath={cliPath}
+          cwd={activeCwd}
           onChange={(patch) => {
             if (patch.editor !== undefined) {
               setEditor(patch.editor);

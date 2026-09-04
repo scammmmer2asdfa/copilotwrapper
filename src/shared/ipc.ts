@@ -32,9 +32,23 @@ export const IPC = {
   authDone: 'auth:done',
 
   filesOpenInEditor: 'files:open-in-editor',
+  filesReadInstructions: 'files:read-instructions',
+  filesWriteInstructions: 'files:write-instructions',
 
   dialogChooseDirectory: 'dialog:choose-directory',
-  dialogChooseFile: 'dialog:choose-file'
+  dialogChooseFile: 'dialog:choose-file',
+
+  environmentCheck: 'environment:check',
+  environmentInstallCli: 'environment:install-cli',
+  environmentInstallOutput: 'environment:install-output',
+  environmentInstallDone: 'environment:install-done',
+
+  terminalCreate: 'terminal:create',
+  terminalWrite: 'terminal:write',
+  terminalResize: 'terminal:resize',
+  terminalKill: 'terminal:kill',
+  terminalData: 'terminal:data',
+  terminalExit: 'terminal:exit'
 } as const;
 
 export interface SessionSummary {

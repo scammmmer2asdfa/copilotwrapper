@@ -491,6 +491,57 @@ main {
   margin: 10px 0 0;
 }
 
+.docs {
+  max-width: 760px;
+}
+
+.docs__toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 16px 20px;
+  margin-bottom: 32px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-raised);
+}
+
+.docs__toc a {
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.docs__section {
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 40px;
+}
+
+.docs__section:last-child {
+  border-bottom: none;
+}
+
+.docs__section h2 {
+  margin-bottom: 12px;
+}
+
+.docs__section p,
+.docs__section li {
+  color: var(--fg-muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.docs__section ul,
+.docs__section ol {
+  padding-left: 20px;
+}
+
+.docs__section a {
+  color: var(--accent);
+}
+
+
 @media (max-width: 720px) {
   .features,
   .download__grid,

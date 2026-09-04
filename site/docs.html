@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en" data-theme="graphite">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Docs — Copilot Desktop</title>
+    <meta
+      name="description"
+      content="How Copilot Desktop actually works: the Agent Client Protocol, the send queue, auth, terminal, and IPC surface."
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header__brand">Copilot Desktop</div>
+      <nav class="site-header__nav">
+        <a href="index.html">Home</a>
+        <a href="features.html">Features</a>
+        <a href="preview.html">Preview</a>
+        <a href="docs.html" class="active">Docs</a>
+        <a href="faq.html">FAQ</a>
+        <a href="download.html">Download</a>
+        <a href="https://github.com/scammmmer2asdfa/copilotwrapper">Source</a>
+      </nav>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">◑</button>
+    </header>
+
+    <main class="docs">
+      <section class="page-header">
+        <h1>Docs</h1>
+        <p class="page-header__sub">
+          What this app actually does under the hood, for people who want more than "it's an AI chat
+          app."
+        </p>
+      </section>
+
+      <nav class="docs__toc">
+        <a href="#protocol">The protocol</a>
+        <a href="#queue">The send queue</a>
+        <a href="#auth">Sign-in</a>
+        <a href="#cli-location">CLI location</a>
+        <a href="#terminal">Terminal</a>
+        <a href="#instructions">Agent instructions</a>
+        <a href="#security">Security model</a>
+        <a href="#vendoring">Vendored CLI binaries</a>
+      </nav>
+
+      <section id="protocol" class="docs__section">
+        <h2>The protocol: ACP, not screen-scraping</h2>
+        <p>
+          The official Copilot CLI ships an <code>--acp</code> flag that starts it as an
+          <strong>Agent Client Protocol</strong> server, speaking newline-delimited JSON-RPC over its
+          own stdin/stdout. Copilot Desktop's Electron main process spawns exactly that process and
+          talks to it directly — there is no terminal emulator parsing colored text, no regular
+          expressions guessing when a response is "done," and no separate reimplementation of chat
+          logic. The methods this app calls are the same ones any ACP-speaking client would:
+        </p>
+        <ul>
+          <li><code>initialize</code> — capability + auth-method negotiation, done once per process.</li>
+          <li><code>session/new</code> — creates a session for a working directory; the CLI immediately
+            starts pushing <code>session/update</code> notifications, including the list of native
+            slash commands available in that session.</li>
+          <li><code>session/prompt</code> — sends a user turn; resolves once the agent's turn is fully
+            finished (its actual output arrives incrementally via notifications while this is pending).</li>
+          <li><code>session/cancel</code>, <code>session/set_mode</code> — interrupt a turn, or switch
+            between the CLI's own Agent / Plan / Autopilot modes.</li>
+        </ul>
+        <p>
+          Two kinds of messages flow the other way: <code>session/update</code> notifications (agent
+          message/thought chunks, plans, tool call start/update events) that this app folds into a
+          single growing chat log rather than one bubble per network chunk, and inbound
+          <code>session/request_permission</code> <em>requests</em> — the agent itself asking
+          permission before running a tool — which this app turns into a blocking modal dialog. Nothing
+          proceeds in that session until the dialog is answered or cancelled.
+        </p>
+      </section>
+
+      <section id="queue" class="docs__section">
+        <h2>The send queue: why messages never get dropped</h2>
+        <p>
+          <code>session/prompt</code> is a single in-flight call per session — you can't fire a second
+          prompt while the first is still resolving without it interrupting the running turn. But
+          people don't wait; they keep typing follow-ups while the agent is still working. Copilot
+          Desktop handles this with a small SQLite-backed queue (<code>src/main/db.ts</code>,
+          <code>src/main/agent-manager.ts</code>):
+        </p>
+        <ol>
+          <li>Every sent message is written to a <code>messages</code> table immediately, so the log is
+            always accurate regardless of send timing.</li>
+          <li>If no turn is in flight for that session, the message is dispatched right away.</li>
+          <li>If a turn <em>is</em> in flight, the message is inserted into a <code>queue</code> table
+            with status <code>queued</code> instead.</li>
+          <li>When the in-flight turn resolves, the queue is drained for that session — one item at a
+            time, in insertion order, each marked <code>sending</code> right before dispatch and
+            <code>sent</code> (or <code>failed</code>, without blocking anything behind it) after.</li>
+        </ol>
+        <p>
+          The important part: if the app crashes or is killed while an item is marked
+          <code>sending</code>, that item is not lost. <code>openDatabase()</code> resets any row still
+          marked <code>sending</code> back to <code>queued</code> the next time it opens — so the
+          message gets retried instead of silently disappearing. This exact behavior is covered by an
+          automated test that reopens the database mid-"crash" and asserts the row comes back as
+          queued.
+        </p>
+      </section>
+
+      <section id="auth" class="docs__section">
+        <h2>Sign-in: zero tokens in this app</h2>
+        <p>
+          This app never sees, stores, or transmits a Copilot access token. The CLI's own
+          <code>initialize()</code> response includes an <code>authMethods</code> list, and each
+          method carries a <code>_meta['terminal-auth']</code> object with the exact command and
+          arguments the CLI wants run to authenticate — in practice, <code>copilot login</code>. All
+          this app does is spawn that exact command as its own child process and scrape the
+          device-code and verification URL it prints to stdout/stderr for display in a dialog. The
+          actual OAuth device-code exchange, and the resulting token, live entirely inside that CLI
+          process and whatever credential store it uses on your machine.
+        </p>
+      </section>
+
+      <section id="cli-location" class="docs__section">
+        <h2>Choosing which CLI binary runs</h2>
+        <p>
+          Settings → "Copilot CLI location" lets you point the app at a <code>copilot</code> binary you
+          installed yourself (for example via <code>npm install -g @github/copilot</code>) instead of
+          the one bundled with the app. Two reasons you might want this: you already keep the CLI
+          updated yourself and want the app to use that exact version, or you're hitting macOS
+          Gatekeeper's quarantine block on the downloaded app bundle — an npm-installed binary is
+          never quarantined the way a browser-downloaded file is, so pointing at one sidesteps that
+          specific problem entirely for the CLI process (the app bundle itself still needs the usual
+          "Open Anyway" workaround once).
+        </p>
+      </section>
+
+      <section id="terminal" class="docs__section">
+        <h2>The embedded terminal</h2>
+        <p>
+          The bottom panel's "Terminal" tab is a real, PTY-backed shell — <a
+            href="https://www.npmjs.com/package/node-pty"
+            >node-pty</a
+          >
+          in the main process spawns an actual <code>bash</code>/<code>powershell.exe</code> process
+          per terminal, and <a href="https://xtermjs.org/">xterm.js</a> renders it in the renderer,
+          the same combination VS Code's own integrated terminal uses. Keystrokes go renderer → IPC →
+          PTY; PTY output goes the other way. It is entirely independent of the agent session running
+          alongside it — you can run your own commands without touching what the agent is doing. The
+          "Agent Output" tab next to it is different: it's a live, read-only stream of the
+          <code>copilot --acp</code> subprocess's own stderr, useful for seeing what the agent process
+          itself is logging in real time.
+        </p>
+      </section>
+
+      <section id="instructions" class="docs__section">
+        <h2>Agent instructions</h2>
+        <p>
+          Settings → "Agent instructions" reads and writes
+          <code>.github/copilot-instructions.md</code> in the current session's working directory —
+          the same repo-level rules file the real CLI's own instruction loading (and its
+          <code>/init</code> slash command) uses. This app doesn't invent a separate rules format; it
+          just gives you a convenient editor for the file the CLI already reads.
+        </p>
+      </section>
+
+      <section id="security" class="docs__section">
+        <h2>Security model</h2>
+        <p>
+          The renderer process has <code>nodeIntegration: false</code> and
+          <code>contextIsolation: true</code>. It has no direct access to Node.js, Electron internals,
+          or the filesystem — every capability it has is a specific, typed method exposed through
+          <code>contextBridge</code> in <code>src/preload/index.ts</code>, backed by an explicit IPC
+          channel list in <code>src/shared/ipc.ts</code>. The renderer can ask the main process to
+          "open this file in an editor" or "start a terminal at this path," but it cannot execute
+          arbitrary Node code, and window navigation to external URLs is intercepted and redirected to
+          your OS's default browser rather than loaded in-app.
+        </p>
+      </section>
+
+      <section id="vendoring" class="docs__section">
+        <h2>Why the CLI binaries are committed to this repo</h2>
+        <p>
+          <code>resources/copilot-cli/</code> contains the actual <code>copilot</code> executables for
+          all four supported platforms, tracked with Git LFS rather than fetched from npm at build
+          time. A clone of this repository (with Git LFS support) is a complete, working development
+          environment with no separate download step and no dependency on the npm registry being
+          reachable at build time. <code>scripts/fetch-cli.mjs</code> still exists — it's how these
+          vendored binaries get updated to a newer published CLI version, not how they're obtained for
+          day-to-day development.
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="site-footer__row">
+        <span>Copilot Desktop is an independent client. Not affiliated with GitHub.</span>
+        <nav class="site-footer__links">
+          <a href="https://github.com/scammmmer2asdfa/copilotwrapper">GitHub</a>
+          <a href="https://github.com/scammmmer2asdfa/copilotwrapper/releases">Releases</a>
+          <a href="https://github.com/scammmmer2asdfa/copilotwrapper/blob/main/LICENSE">License</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script src="theme.js"></script>
+  </body>
+</html>

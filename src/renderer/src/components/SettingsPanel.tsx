@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { EditorId } from '../../../main/editor';
+import { THEMES, type ThemeId } from '../themes';
 
 interface McpServerRow {
   name: string;
@@ -9,15 +10,17 @@ interface McpServerRow {
 interface Props {
   editor: EditorId;
   customBinary: string;
-  theme: 'graphite' | 'paper';
+  theme: ThemeId;
   mcpServers: McpServerRow[];
   /** Empty string = auto-detect (bundled binary). */
   cliPath: string;
+  /** Working directory of the active session, for the agent instructions file. */
+  cwd: string;
   onChange: (
     patch: Partial<{
       editor: EditorId;
       customBinary: string;
-      theme: 'graphite' | 'paper';
+      theme: ThemeId;
       mcpServers: McpServerRow[];
       cliPath: string;
     }>
@@ -37,9 +40,19 @@ const EDITOR_OPTIONS: { id: EditorId; label: string }[] = [
 ];
 
 export function SettingsPanel(props: Props): React.JSX.Element {
-  const { editor, customBinary, theme, mcpServers, cliPath, onChange, onClose } = props;
+  const { editor, customBinary, theme, mcpServers, cliPath, cwd, onChange, onClose } = props;
   const [newServerName, setNewServerName] = useState('');
   const [newServerCommand, setNewServerCommand] = useState('');
+  const [instructions, setInstructions] = useState('');
+  const [instructionsStatus, setInstructionsStatus] = useState<'idle' | 'loading' | 'saving' | 'saved'>('loading');
+
+  useEffect(() => {
+    setInstructionsStatus('loading');
+    window.copilotDesktop.files.readInstructions(cwd).then((content: string) => {
+      setInstructions(content);
+      setInstructionsStatus('idle');
+    });
+  }, [cwd]);
 
   return (
     <div className="modal-overlay">
@@ -92,14 +105,38 @@ export function SettingsPanel(props: Props): React.JSX.Element {
 
         <section>
           <h4>Theme</h4>
-          <div className="settings-theme-toggle">
-            <button className={theme === 'graphite' ? 'active' : ''} onClick={() => onChange({ theme: 'graphite' })}>
-              Graphite
-            </button>
-            <button className={theme === 'paper' ? 'active' : ''} onClick={() => onChange({ theme: 'paper' })}>
-              Paper
-            </button>
-          </div>
+          <select value={theme} onChange={(e) => onChange({ theme: e.target.value as ThemeId })}>
+            {THEMES.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+        </section>
+
+        <section>
+          <h4>Agent instructions</h4>
+          <p className="settings-hint">
+            Saved to <code>.github/copilot-instructions.md</code> in the current session's directory —
+            the same file the real CLI's <code>/init</code> command and repo-level rules use.
+          </p>
+          <textarea
+            className="mono settings-instructions"
+            rows={6}
+            value={instructions}
+            onChange={(e) => setInstructions(e.target.value)}
+            placeholder="e.g. Always write tests for new code. Prefer functional React components."
+          />
+          <button
+            disabled={instructionsStatus === 'saving'}
+            onClick={async () => {
+              setInstructionsStatus('saving');
+              await window.copilotDesktop.files.writeInstructions(cwd, instructions);
+              setInstructionsStatus('saved');
+            }}
+          >
+            {instructionsStatus === 'saving' ? 'Saving…' : instructionsStatus === 'saved' ? 'Saved' : 'Save'}
+          </button>
         </section>
 
         <section>

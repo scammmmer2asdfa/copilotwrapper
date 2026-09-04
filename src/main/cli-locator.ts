@@ -38,9 +38,10 @@ export interface LocateOptions {
  * 2. `<resourcesPath>/copilot-cli/<name>` — the packaged layout: each
  *    platform's installer bundles only its own binary flat under
  *    `resources/copilot-cli/` (see electron-builder.yml extraResources).
- * 3. `<appRoot>/resources/copilot-cli/<platform>/<name>` — the dev layout
- *    produced by `npm run fetch-cli` (scripts/fetch-cli.mjs), keyed by
- *    platform since a dev machine only ever fetches its own platform.
+ * 3. `<appRoot>/resources/copilot-cli/<platform>/<name>` — the dev layout:
+ *    binaries for all 4 platforms are vendored directly in the repo (via Git
+ *    LFS), so this works right after a fresh clone. `npm run fetch-cli` still
+ *    exists to re-fetch/update them to a newer published CLI version.
  * 4. `node_modules/@github/copilot-<platform>/copilot`.
  * 5. PATH.
  */
@@ -77,3 +78,9 @@ function findOnPath(name: string): string | null {
   }
   return null;
 }
+
+/** A `copilot` on PATH, e.g. from `npm install -g @github/copilot` — used for the setup wizard's detection status, distinct from the bundled binary. */
+export function locateSystemCli(): string | null {
+  return findOnPath(binaryName(detectPlatform()));
+}
+

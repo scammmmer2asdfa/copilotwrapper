@@ -2,7 +2,11 @@
 /**
  * Downloads the copilot CLI binary for the current (or requested) platform
  * from the real, published `@github/copilot-<platform>` npm packages into
- * resources/copilot-cli/<platform>/, so nothing has to be placed by hand.
+ * resources/copilot-cli/<platform>/.
+ *
+ * The binaries for all 4 platforms are already vendored in the repo (via Git
+ * LFS) — a fresh clone doesn't need this. Re-run it to update to a newer
+ * published CLI version, then commit the result.
  *
  * Usage: node scripts/fetch-cli.mjs [platform ...]
  *   platform: darwin-arm64 | darwin-x64 | win32-x64 | linux-x64 (default: current)

@@ -23,12 +23,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run fetch-cli linux-x64
+      - run: chmod +x resources/copilot-cli/linux-x64/copilot
       - run: npm run build
       - name: Package (Linux AppImage, x64)
         run: npx electron-builder --linux --publish never
@@ -43,12 +45,13 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run fetch-cli win32-x64
       - run: npm run build
       - name: Package (Windows nsis, x64)
         run: npx electron-builder --win --publish never
@@ -67,13 +70,14 @@ jobs:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run fetch-cli darwin-arm64
-      - run: npm run fetch-cli darwin-x64
+      - run: chmod +x resources/copilot-cli/darwin-arm64/copilot resources/copilot-cli/darwin-x64/copilot
       - run: npm run build
       - name: Package (macOS dmg, arm64 + x64)
         run: npx electron-builder --mac --arm64 --x64 --publish never
@@ -95,6 +99,7 @@ jobs:
     needs: [build-linux, build-windows, build-macos]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
