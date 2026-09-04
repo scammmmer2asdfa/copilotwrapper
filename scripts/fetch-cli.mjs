@@ -51,10 +51,15 @@ async function fetchPlatform(platform) {
   await mkdir(tmpDir, { recursive: true });
 
   console.log(`Fetching ${pkg} ...`);
-  // On Windows, `npm` is a npm.cmd shim; execFile needs the concrete
-  // executable name rather than shell:true (which doesn't escape args).
-  const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const { stdout: packResult } = await execFileAsync(npmCmd, ['pack', pkg, '--silent'], { cwd: tmpDir });
+  // On Windows, npm is a .cmd shim — spawning it directly (even by exact
+  // name) throws EINVAL, since .cmd files aren't real executables and must
+  // run through cmd.exe. /d /s /c matches how GitHub's own runner invokes
+  // npm.cmd internally.
+  const [npmCommand, npmArgs] =
+    process.platform === 'win32'
+      ? ['cmd.exe', ['/d', '/s', '/c', 'npm', 'pack', pkg, '--silent']]
+      : ['npm', ['pack', pkg, '--silent']];
+  const { stdout: packResult } = await execFileAsync(npmCommand, npmArgs, { cwd: tmpDir });
   const tarballName = packResult.trim().split('\n').pop();
   const tarballPath = join(tmpDir, tarballName);
 
