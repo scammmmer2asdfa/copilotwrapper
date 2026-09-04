@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-typecheck-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # Electron itself (even run as plain node via ELECTRON_RUN_AS_NODE, used
+      # by the "test" script) dynamically links these at process startup.
+      - name: Install Electron runtime libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libnss3 libatk1.0-0 libatk-bridge2.0-0 libgtk-3-0 libgbm1 \
+            libasound2t64 libxss1 libxtst6
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Downloads the real CLI binary so test/acp-client.test.ts runs its
+      # integration tests instead of skipping them.
+      - name: Fetch Copilot CLI
+        run: npm run fetch-cli
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build

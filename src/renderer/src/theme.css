@@ -1,0 +1,92 @@
+/**
+ * Design tokens shared by app UI and the marketing site (see site/styles.css).
+ * Two themes, one set of custom properties — never duplicate rules per theme.
+ */
+:root,
+[data-theme='graphite'] {
+  --bg: #1a1a1a;
+  --bg-raised: #232323;
+  --bg-sunken: #141414;
+  --border: #333333;
+  --fg: #e6e6e6;
+  --fg-muted: #9a9a9a;
+  --accent: #58a6ff;
+  --accent-fg: #0b0e14;
+  --danger: #e5534b;
+  --warning: #d29922;
+  --success: #3fb950;
+}
+
+[data-theme='paper'] {
+  --bg: #faf8f4;
+  --bg-raised: #ffffff;
+  --bg-sunken: #efece5;
+  --border: #ddd8cd;
+  --fg: #222222;
+  --fg-muted: #6b6459;
+  --accent: #005cc5;
+  --accent-fg: #ffffff;
+  --danger: #cf222e;
+  --warning: #9a6700;
+  --success: #1a7f37;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+}
+
+.mono {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+button {
+  font-family: inherit;
+  color: inherit;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+  color: var(--fg);
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 6px;
+}

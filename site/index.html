@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en" data-theme="graphite">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Copilot Desktop — a native shell for the GitHub Copilot CLI</title>
+    <meta
+      name="description"
+      content="An Electron shell around the official GitHub Copilot CLI, speaking its Agent Client Protocol directly. Sessions, queued messages, tool permissions, and plans in a real desktop UI."
+    />
+    <meta property="og:title" content="Copilot Desktop" />
+    <meta
+      property="og:description"
+      content="A native desktop client for the official GitHub Copilot CLI, built on the Agent Client Protocol."
+    />
+    <meta property="og:type" content="website" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header__brand">Copilot Desktop</div>
+      <nav class="site-header__nav">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="#preview">Preview</a>
+        <a href="#faq">FAQ</a>
+        <a href="#download">Download</a>
+        <a href="https://github.com/scammmmer2asdfa/copilotwrapper">Source</a>
+      </nav>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">◑</button>
+    </header>
+
+    <main>
+      <section class="hero">
+        <span class="hero__eyebrow">Unofficial · Open source · MIT</span>
+        <h1>A native shell for GitHub Copilot CLI.</h1>
+        <p class="hero__sub">
+          Copilot Desktop drives the real <code>copilot --acp</code> agent over its own Agent Client
+          Protocol — no scraped terminal output, no reimplemented chat engine. Sessions, queued
+          messages, tool permissions and plans, all in a proper desktop UI.
+        </p>
+        <div class="hero__actions">
+          <a class="button button--primary" href="#download">Download</a>
+          <a class="button" href="https://github.com/scammmmer2asdfa/copilotwrapper">View source</a>
+        </div>
+        <div class="hero__stats">
+          <div><strong>4</strong><span>platform builds</span></div>
+          <div><strong>32</strong><span>native slash commands</span></div>
+          <div><strong>0</strong><span>tokens handled by the UI</span></div>
+        </div>
+      </section>
+
+      <section id="features" class="features">
+        <div class="feature">
+          <h3>Real ACP, not a guess</h3>
+          <p>
+            Speaks newline-delimited JSON-RPC directly to <code>copilot --acp</code>: initialize,
+            session/new, session/prompt, live session/update streaming, and permission requests.
+          </p>
+        </div>
+        <div class="feature">
+          <h3>Never drops a message</h3>
+          <p>
+            Messages sent mid-turn are queued per-session in SQLite and dispatched in order once the
+            current turn finishes — including recovery if the app crashes mid-send.
+          </p>
+        </div>
+        <div class="feature">
+          <h3>Your editor, your call</h3>
+          <p>
+            Jump from a tool call straight into VS Code, Cursor, Zed, Sublime, WebStorm, vim, or any
+            custom binary you configure.
+          </p>
+        </div>
+        <div class="feature">
+          <h3>You approve every tool call</h3>
+          <p>
+            Permission requests from the agent block the turn until you respond — allow once, allow
+            always, or reject — right where the tool call happened.
+          </p>
+        </div>
+        <div class="feature">
+          <h3>Sign in, no tokens in sight</h3>
+          <p>
+            Runs the CLI's own <code>copilot login</code> device-code flow and shows you the code.
+            The token exchange stays entirely inside the CLI process.
+          </p>
+        </div>
+        <div class="feature">
+          <h3>Two themes, one token set</h3>
+          <p>
+            Graphite and Paper are both driven by the same CSS custom properties — the app and this
+            site share the exact same design tokens.
+          </p>
+        </div>
+      </section>
+
+      <section id="how-it-works" class="how-it-works">
+        <h2>How it works</h2>
+        <ol class="steps">
+          <li>
+            <span class="steps__index">1</span>
+            <div>
+              <h4>Spawn the real CLI</h4>
+              <p>The Electron main process launches <code>copilot --acp</code> as a child process.</p>
+            </div>
+          </li>
+          <li>
+            <span class="steps__index">2</span>
+            <div>
+              <h4>Speak its protocol</h4>
+              <p>
+                Newline-delimited JSON-RPC over stdio — <code>initialize</code>, <code>session/new</code>,
+                <code>session/prompt</code> — with streamed <code>session/update</code> notifications.
+              </p>
+            </div>
+          </li>
+          <li>
+            <span class="steps__index">3</span>
+            <div>
+              <h4>Render it properly</h4>
+              <p>
+                Agent messages, thoughts, plans and tool calls land in a real React UI, not a terminal
+                pane.
+              </p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <section id="preview" class="preview">
+        <h2>Preview</h2>
+        <div class="mock-window" aria-hidden="true">
+          <div class="mock-window__titlebar">
+            <span class="mock-dot mock-dot--red"></span>
+            <span class="mock-dot mock-dot--yellow"></span>
+            <span class="mock-dot mock-dot--green"></span>
+          </div>
+          <div class="mock-window__body">
+            <div class="mock-rail">
+              <div class="mock-icon mock-icon--active">CD</div>
+              <div class="mock-icon">S2</div>
+              <div class="mock-icon">S3</div>
+            </div>
+            <div class="mock-log">
+              <div class="mock-bubble mock-bubble--user">refactor the queue drain loop</div>
+              <div class="mock-bubble mock-bubble--agent">Reading src/main/agent-manager.ts…</div>
+              <div class="mock-bubble mock-bubble--tool">🔧 read_file · completed</div>
+              <div class="mock-bubble mock-bubble--agent">Done — queue now drains one item at a time.</div>
+            </div>
+            <div class="mock-status">
+              <div><span class="mock-status__label">Connection</span><span class="mock-pill">connected</span></div>
+              <div><span class="mock-status__label">Queue</span><span>0 pending</span></div>
+              <div><span class="mock-status__label">Mode</span><span>Agent</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="faq" class="faq">
+        <h2>FAQ</h2>
+        <details>
+          <summary>Is this an official GitHub product?</summary>
+          <p>No. Copilot Desktop is an independent, unofficial client that wraps the official
+            <code>@github/copilot</code> CLI. It is not affiliated with or endorsed by GitHub.</p>
+        </details>
+        <details>
+          <summary>Do I need my own Copilot subscription?</summary>
+          <p>Yes — the app shells out to the real CLI's own login and subscription checks; it doesn't
+            provide any access on its own.</p>
+        </details>
+        <details>
+          <summary>Where does my code and chat history live?</summary>
+          <p>Locally, in a SQLite database in your OS's app-data directory. Nothing is sent anywhere
+            except what the Copilot CLI itself sends as part of a normal session.</p>
+        </details>
+        <details>
+          <summary>Which platforms are supported?</summary>
+          <p>macOS (Apple Silicon and Intel), Windows x64, and Linux x64, each bundling only its own
+            platform's CLI binary.</p>
+        </details>
+      </section>
+
+      <section id="download" class="download">
+        <h2>Download</h2>
+        <div class="download__grid">
+          <a class="download__card" href="https://github.com/scammmmer2asdfa/copilotwrapper/releases/latest">
+            <strong>macOS</strong>
+            <span>Apple Silicon &amp; Intel — .dmg</span>
+          </a>
+          <a class="download__card" href="https://github.com/scammmmer2asdfa/copilotwrapper/releases/latest">
+            <strong>Windows</strong>
+            <span>x64 — .exe (nsis)</span>
+          </a>
+          <a class="download__card" href="https://github.com/scammmmer2asdfa/copilotwrapper/releases/latest">
+            <strong>Linux</strong>
+            <span>x64 — .AppImage</span>
+          </a>
+        </div>
+        <p class="download__note">Builds are produced automatically by the release workflow on tag push.</p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="site-footer__row">
+        <span>Copilot Desktop is an independent client. Not affiliated with GitHub.</span>
+        <nav class="site-footer__links">
+          <a href="https://github.com/scammmmer2asdfa/copilotwrapper">GitHub</a>
+          <a href="https://github.com/scammmmer2asdfa/copilotwrapper/releases">Releases</a>
+          <a href="https://github.com/scammmmer2asdfa/copilotwrapper/blob/main/LICENSE">License</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script src="theme.js"></script>
+  </body>
+</html>
+

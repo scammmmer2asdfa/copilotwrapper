@@ -1,0 +1,72 @@
+name: Release
+
+# Only ever runs on a version tag or manual dispatch — never on a plain push
+# to main, so macOS runners (the scarce/slow ones) aren't queued for every
+# commit. macOS x64 + arm64 are both built from a single macos-14 (arm64)
+# runner in one electron-builder invocation (see electron-builder.yml's mac
+# target arch list) instead of requesting a separate macos-13 Intel job.
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run fetch-cli linux-x64
+      - run: npm run build
+      - name: Package & publish (Linux AppImage, x64)
+        run: npx electron-builder --linux --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run fetch-cli win32-x64
+      - run: npm run build
+      - name: Package & publish (Windows nsis, x64)
+        run: npx electron-builder --win --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-macos:
+    # arm64 host: builds BOTH arm64 and x64 dmgs in one job (electron-builder
+    # downloads prebuilt Electron + native module binaries per target arch;
+    # no Rosetta or Intel host required). Avoids a second macos-13 job.
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run fetch-cli darwin-arm64
+      - run: npm run fetch-cli darwin-x64
+      - run: npm run build
+      - name: Package & publish (macOS dmg, arm64 + x64)
+        run: npx electron-builder --mac --arm64 --x64 --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

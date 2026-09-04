@@ -1,0 +1,9 @@
+node_modules/
+out/
+dist/
+resources/copilot-cli/
+.tmp-fetch-cli/
+*.log
+.DS_Store
+*.sqlite
+*.sqlite-journal
