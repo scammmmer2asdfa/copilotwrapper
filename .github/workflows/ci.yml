@@ -18,7 +18,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       # Electron itself (even run as plain node via ELECTRON_RUN_AS_NODE, used
