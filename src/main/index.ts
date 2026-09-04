@@ -12,6 +12,7 @@ import type { RequestPermissionParams, RequestPermissionResult } from './acp-pro
 let mainWindow: BrowserWindow | null = null;
 let db: AppDatabase;
 let agent: AgentManager;
+let agentBinPath: string | null = null;
 const authRunner = new AuthRunner();
 const pendingPermissions = new Map<string, (result: RequestPermissionResult) => void>();
 
@@ -67,9 +68,15 @@ function wireAgentEvents(): void {
 
 function registerIpcHandlers(): void {
   ipcMain.handle(IPC.agentStart, async (_e, cwd: string) => {
-    const binPath = locateCli({ resourcesPath: process.resourcesPath, appRoot: app.getAppPath() });
-    if (!agent) {
+    const binPath = locateCli({
+      resourcesPath: process.resourcesPath,
+      appRoot: app.getAppPath(),
+      overridePath: db.getSetting('cliPath') || undefined
+    });
+    if (!agent || agentBinPath !== binPath) {
+      agent?.stop();
       agent = new AgentManager(db, binPath, cwd);
+      agentBinPath = binPath;
       wireAgentEvents();
     }
     return agent.start();
@@ -129,6 +136,12 @@ function registerIpcHandlers(): void {
   ipcMain.handle(IPC.dialogChooseDirectory, async () => {
     if (!mainWindow) return null;
     const result = await dialog.showOpenDialog(mainWindow, { properties: ['openDirectory'] });
+    return result.canceled ? null : result.filePaths[0];
+  });
+
+  ipcMain.handle(IPC.dialogChooseFile, async () => {
+    if (!mainWindow) return null;
+    const result = await dialog.showOpenDialog(mainWindow, { properties: ['openFile'] });
     return result.canceled ? null : result.filePaths[0];
   });
 }

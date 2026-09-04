@@ -21,22 +21,34 @@ export interface LocateOptions {
   resourcesPath: string;
   /** directory containing node_modules (project root) */
   appRoot: string;
+  /**
+   * User-configured override (Settings → "Copilot CLI location"), e.g.
+   * pointing at a `copilot` the user installed themselves via
+   * `npm install -g @github/copilot`. Takes priority over everything else,
+   * and unlike the bundled binary is very unlikely to carry a macOS
+   * quarantine flag (that's only attached by quarantine-aware download
+   * paths like browsers, not by npm/CLI installs).
+   */
+  overridePath?: string;
 }
 
 /**
  * Resolves the copilot CLI binary. Checked in order:
- * 1. `<resourcesPath>/copilot-cli/<name>` — the packaged layout: each
+ * 1. `opts.overridePath` — explicit user setting, if configured and it exists.
+ * 2. `<resourcesPath>/copilot-cli/<name>` — the packaged layout: each
  *    platform's installer bundles only its own binary flat under
  *    `resources/copilot-cli/` (see electron-builder.yml extraResources).
- * 2. `<appRoot>/resources/copilot-cli/<platform>/<name>` — the dev layout
+ * 3. `<appRoot>/resources/copilot-cli/<platform>/<name>` — the dev layout
  *    produced by `npm run fetch-cli` (scripts/fetch-cli.mjs), keyed by
  *    platform since a dev machine only ever fetches its own platform.
- * 3. `node_modules/@github/copilot-<platform>/copilot`.
- * 4. PATH.
+ * 4. `node_modules/@github/copilot-<platform>/copilot`.
+ * 5. PATH.
  */
 export function locateCli(opts: LocateOptions): string {
   const platform = detectPlatform();
   const name = binaryName(platform);
+
+  if (opts.overridePath && existsSync(opts.overridePath)) return opts.overridePath;
 
   const packaged = join(opts.resourcesPath, 'copilot-cli', name);
   if (existsSync(packaged)) return packaged;

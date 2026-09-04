@@ -42,6 +42,7 @@ export function App(): React.JSX.Element {
   const [customBinary, setCustomBinary] = useState('');
   const [theme, setTheme] = useState<'graphite' | 'paper'>('graphite');
   const [mcpServers, setMcpServers] = useState<McpServerRow[]>([]);
+  const [cliPath, setCliPath] = useState('');
 
   const activeLog = useMemo(() => (activeId ? logsBySession[activeId] ?? [] : []), [activeId, logsBySession]);
 
@@ -99,6 +100,7 @@ export function App(): React.JSX.Element {
       if (settings['customBinary']) setCustomBinary(settings['customBinary']);
       if (settings['theme']) setTheme(settings['theme'] as 'graphite' | 'paper');
       if (settings['mcpServers']) setMcpServers(JSON.parse(settings['mcpServers']));
+      if (settings['cliPath']) setCliPath(settings['cliPath']);
 
       try {
         const initResult = (await api.agent.start(await getCwd())) as {
@@ -247,6 +249,7 @@ export function App(): React.JSX.Element {
           customBinary={customBinary}
           theme={theme}
           mcpServers={mcpServers}
+          cliPath={cliPath}
           onChange={(patch) => {
             if (patch.editor !== undefined) {
               setEditor(patch.editor);
@@ -263,6 +266,13 @@ export function App(): React.JSX.Element {
             if (patch.mcpServers !== undefined) {
               setMcpServers(patch.mcpServers);
               persistSettings({ mcpServers: JSON.stringify(patch.mcpServers) });
+            }
+            if (patch.cliPath !== undefined) {
+              setCliPath(patch.cliPath);
+              persistSettings({ cliPath: patch.cliPath });
+              // Reconnect using the newly configured (or newly cleared) CLI path.
+              setNeedsAuth(false);
+              void window.copilotDesktop.agent.start('.');
             }
           }}
           onClose={() => setSettingsOpen(false)}

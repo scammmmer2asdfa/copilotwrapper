@@ -11,7 +11,17 @@ interface Props {
   customBinary: string;
   theme: 'graphite' | 'paper';
   mcpServers: McpServerRow[];
-  onChange: (patch: Partial<{ editor: EditorId; customBinary: string; theme: 'graphite' | 'paper'; mcpServers: McpServerRow[] }>) => void;
+  /** Empty string = auto-detect (bundled binary). */
+  cliPath: string;
+  onChange: (
+    patch: Partial<{
+      editor: EditorId;
+      customBinary: string;
+      theme: 'graphite' | 'paper';
+      mcpServers: McpServerRow[];
+      cliPath: string;
+    }>
+  ) => void;
   onClose: () => void;
 }
 
@@ -27,7 +37,7 @@ const EDITOR_OPTIONS: { id: EditorId; label: string }[] = [
 ];
 
 export function SettingsPanel(props: Props): React.JSX.Element {
-  const { editor, customBinary, theme, mcpServers, onChange, onClose } = props;
+  const { editor, customBinary, theme, mcpServers, cliPath, onChange, onClose } = props;
   const [newServerName, setNewServerName] = useState('');
   const [newServerCommand, setNewServerCommand] = useState('');
 
@@ -35,6 +45,32 @@ export function SettingsPanel(props: Props): React.JSX.Element {
     <div className="modal-overlay">
       <div className="modal modal--settings">
         <h3>Settings</h3>
+
+        <section>
+          <h4>Copilot CLI location</h4>
+          <p className="settings-hint">
+            Auto-detect uses the bundled binary. Pointing at a CLI you installed yourself (e.g.
+            <code> npm install -g @github/copilot</code>) also avoids macOS's quarantine flag on
+            unsigned downloaded apps, since npm-installed binaries never get quarantined.
+          </p>
+          <div className="settings-cli-path">
+            <input
+              className="mono"
+              placeholder="Auto-detect (bundled)"
+              value={cliPath}
+              onChange={(e) => onChange({ cliPath: e.target.value })}
+            />
+            <button
+              onClick={async () => {
+                const picked = await window.copilotDesktop.dialog.chooseFile();
+                if (picked) onChange({ cliPath: picked });
+              }}
+            >
+              Browse…
+            </button>
+            {cliPath && <button onClick={() => onChange({ cliPath: '' })}>Reset</button>}
+          </div>
+        </section>
 
         <section>
           <h4>Editor</h4>

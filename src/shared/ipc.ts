@@ -33,7 +33,8 @@ export const IPC = {
 
   filesOpenInEditor: 'files:open-in-editor',
 
-  dialogChooseDirectory: 'dialog:choose-directory'
+  dialogChooseDirectory: 'dialog:choose-directory',
+  dialogChooseFile: 'dialog:choose-file'
 } as const;
 
 export interface SessionSummary {

@@ -75,7 +75,8 @@ const api = {
   },
 
   dialog: {
-    chooseDirectory: () => ipcRenderer.invoke(IPC.dialogChooseDirectory)
+    chooseDirectory: () => ipcRenderer.invoke(IPC.dialogChooseDirectory),
+    chooseFile: () => ipcRenderer.invoke(IPC.dialogChooseFile)
   }
 };
 

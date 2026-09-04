@@ -53,6 +53,17 @@
             official per-platform <code>@github/copilot-&lt;platform&gt;</code> package for whichever
             installer you run.</p>
         </details>
+        <details>
+          <summary>macOS says the app "contains malware" / won't open — what do I do?</summary>
+          <p>The macOS build isn't code-signed or notarized by Apple (that requires a paid Apple
+            Developer Program membership this project doesn't have), so Gatekeeper blocks it by
+            default the same way it would any unsigned download. To run it anyway: open
+            <strong>System Settings → Privacy &amp; Security</strong>, scroll down, and click
+            <strong>"Open Anyway"</strong> next to the message about Copilot Desktop (appears after
+            the first blocked attempt). Alternatively, in Terminal:
+            <code>xattr -cr /Applications/Copilot&nbsp;Desktop.app</code> to strip the quarantine flag.
+            This isn't a bug in the app — it's expected for any unsigned open-source Mac app.</p>
+        </details>
       </section>
     </main>
 
