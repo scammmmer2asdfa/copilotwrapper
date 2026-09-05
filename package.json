@@ -1,7 +1,7 @@
 {
   "name": "copilot-desktop",
-  "version": "0.1.0",
-  "description": "An Electron shell around the official GitHub Copilot CLI (ACP)",
+  "version": "0.2.0",
+  "description": "A native Electron shell for GitHub Codespaces",
   "main": "out/main/index.js",
   "private": true,
   "type": "module",
