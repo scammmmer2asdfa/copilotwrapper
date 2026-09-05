@@ -377,9 +377,14 @@ main {
 
 .mock-window__body {
   display: grid;
-  grid-template-columns: 48px 1fr 160px;
+  grid-template-columns: 48px 1fr;
   min-height: 220px;
   background: var(--bg);
+}
+
+.mock-window__body--browse {
+  display: flex;
+  flex-direction: column;
 }
 
 .mock-rail {
@@ -408,64 +413,55 @@ main {
   color: var(--accent);
 }
 
-.mock-log {
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-family: ui-monospace, monospace;
-  font-size: 12px;
+.mock-icon--plus {
+  color: var(--fg-muted);
+  font-size: 14px;
 }
 
-.mock-bubble {
+.mock-editor {
+  display: flex;
+  flex-direction: column;
+}
+
+.mock-editor__bar {
   padding: 6px 10px;
-  border-radius: 6px;
-  max-width: 85%;
-}
-
-.mock-bubble--user {
-  align-self: flex-end;
-  background: var(--accent);
-  color: var(--accent-fg);
-}
-
-.mock-bubble--agent {
-  align-self: flex-start;
-  background: var(--bg-raised);
-}
-
-.mock-bubble--tool {
-  align-self: flex-start;
-  background: var(--bg-raised);
-  border: 1px dashed var(--border);
-  color: var(--fg-muted);
-}
-
-.mock-status {
-  background: var(--bg-sunken);
-  padding: 14px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  font-size: 12px;
-}
-
-.mock-status__label {
-  display: block;
-  color: var(--fg-muted);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 2px;
-}
-
-.mock-pill {
-  display: inline-block;
-  border: 1px solid #3fb950;
-  color: #3fb950;
-  border-radius: 999px;
-  padding: 1px 8px;
+  border-bottom: 1px solid var(--border);
+  font-family: ui-monospace, monospace;
   font-size: 11px;
+  color: var(--fg-muted);
+}
+
+.mock-editor__body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-muted);
+  font-size: 13px;
+}
+
+.mock-browse-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+
+.mock-browse-bar__url {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-family: ui-monospace, monospace;
+}
+
+.mock-browse-bar__go {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
 }
 
 .faq {
@@ -552,10 +548,6 @@ main {
 
   .mock-window__body {
     grid-template-columns: 40px 1fr;
-  }
-
-  .mock-status {
-    display: none;
   }
 }
 

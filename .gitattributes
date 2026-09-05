@@ -1,2 +1,0 @@
-resources/copilot-cli/*/copilot filter=lfs diff=lfs merge=lfs -text
-resources/copilot-cli/*/copilot.exe filter=lfs diff=lfs merge=lfs -text

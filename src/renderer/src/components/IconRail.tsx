@@ -1,38 +1,50 @@
 import React from 'react';
-import type { SessionSummary } from '../../../shared/ipc';
+import type { CodespaceTab } from '../../../shared/ipc';
 import { Icon } from './Icon';
 
 interface Props {
-  sessions: SessionSummary[];
-  activeId: string | null;
-  onSelect: (id: string) => void;
+  tabs: CodespaceTab[];
+  activeId: number | null;
+  onSelect: (id: number) => void;
+  onClose: (id: number) => void;
   onNew: () => void;
-  onSettings: () => void;
   onToggleTerminal: () => void;
+  onToggleTheme: () => void;
 }
 
-export function IconRail({ sessions, activeId, onSelect, onNew, onSettings, onToggleTerminal }: Props): React.JSX.Element {
+export function IconRail({ tabs, activeId, onSelect, onClose, onNew, onToggleTerminal, onToggleTheme }: Props): React.JSX.Element {
   return (
     <div className="icon-rail">
-      <button className="icon-rail__new" onClick={onNew} title="New session">
+      <button className="icon-rail__new" onClick={onNew} title="Open a codespace">
         <Icon name="plus" />
       </button>
       <div className="icon-rail__list">
-        {sessions.map((s) => (
-          <button
-            key={s.id}
-            className={'icon-rail__item' + (s.id === activeId ? ' icon-rail__item--active' : '')}
-            title={s.title}
-            onClick={() => onSelect(s.id)}
-          >
-            {s.title.slice(0, 2).toUpperCase() || '??'}
-          </button>
+        {tabs.map((t) => (
+          <div key={t.id} className="icon-rail__tab-wrap">
+            <button
+              className={'icon-rail__item' + (t.id === activeId ? ' icon-rail__item--active' : '')}
+              title={`${t.displayName} — ${t.repository}`}
+              onClick={() => onSelect(t.id)}
+            >
+              {t.displayName.slice(0, 2).toUpperCase() || '??'}
+            </button>
+            <button
+              className="icon-rail__tab-close"
+              title="Close tab"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose(t.id);
+              }}
+            >
+              <Icon name="close" size={10} />
+            </button>
+          </div>
         ))}
       </div>
       <button className="icon-rail__terminal" onClick={onToggleTerminal} title="Terminal">
         <Icon name="terminal" />
       </button>
-      <button className="icon-rail__settings" onClick={onSettings} title="Settings">
+      <button className="icon-rail__settings" onClick={onToggleTheme} title="Theme">
         <Icon name="settings" />
       </button>
     </div>

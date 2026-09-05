@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events';
+import { homedir } from 'node:os';
 import * as pty from 'node-pty';
 
 export interface TerminalManagerEvents {
@@ -14,13 +15,13 @@ export interface TerminalManagerEvents {
 export class TerminalManager extends EventEmitter {
   private terminals = new Map<string, pty.IPty>();
 
-  create(id: string, cwd: string, cols = 80, rows = 24): void {
+  create(id: string, cwd: string | undefined, cols = 80, rows = 24): void {
     const shell = process.platform === 'win32' ? 'powershell.exe' : process.env.SHELL || '/bin/bash';
     const term = pty.spawn(shell, [], {
       name: 'xterm-256color',
       cols,
       rows,
-      cwd,
+      cwd: cwd || homedir(),
       env: process.env as Record<string, string>
     });
     term.onData((chunk) => this.emit('data', id, chunk));

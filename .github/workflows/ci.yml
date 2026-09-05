@@ -15,8 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true
 
       - uses: actions/setup-node@v4
         with:
@@ -35,12 +33,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # The CLI binaries are vendored in the repo via Git LFS (resources/
-      # copilot-cli/**), not fetched from npm at CI time. LFS checkout
-      # doesn't preserve the executable bit, so restore it.
-      - name: Make vendored CLI executable
-        run: chmod +x resources/copilot-cli/linux-x64/copilot
-
       - name: Lint
         run: npm run lint
 
@@ -57,8 +49,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true
 
       - uses: actions/setup-node@v4
         with:
@@ -75,16 +65,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Make vendored CLI executable
-        run: chmod +x resources/copilot-cli/linux-x64/copilot
-
       - name: Build
         run: npm run build
 
       # Playwright drives the real, built Electron app (not a mock) -
-      # launches it, clicks through the setup wizard/settings/terminal, and
-      # asserts on the actual rendered DOM + connection state. Needs a
-      # virtual display since Electron isn't truly headless.
+      # launches it and clicks through the UI. The gh CLI on this runner
+      # isn't authenticated as a real user, so codespace-listing assertions
+      # only check that the picker handles that gracefully, not real data.
+      # Needs a virtual display since Electron isn't truly headless.
       - name: Run Playwright E2E suite
         run: xvfb-run -a npx playwright test
 

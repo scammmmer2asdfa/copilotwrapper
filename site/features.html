@@ -6,7 +6,7 @@
     <title>Features — Copilot Desktop</title>
     <meta
       name="description"
-      content="What Copilot Desktop actually does: real ACP, a durable send queue, permission prompts, editor handoff, and shared design tokens."
+      content="What Copilot Desktop actually does: real codespace tabs, an embedded terminal, a quick in-app browser, and shared design tokens."
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -28,64 +28,46 @@
     <main>
       <section class="page-header">
         <h1>Features</h1>
-        <p class="page-header__sub">What Copilot Desktop actually does, not what any AI chat app says it does.</p>
+        <p class="page-header__sub">What Copilot Desktop actually does, not what any browser tab already does worse.</p>
       </section>
 
       <section id="features" class="features">
         <div class="feature">
-          <h3>Real ACP, not a guess</h3>
+          <h3>Real codespace tabs</h3>
           <p>
-            Speaks newline-delimited JSON-RPC directly to <code>copilot --acp</code>: initialize,
-            session/new, session/prompt, live session/update streaming, and permission requests.
+            The icon rail lists your open codespaces as tabs, persisted across restarts. The `+`
+            button opens a picker backed by the real <code>gh api user/codespaces</code> call — not a
+            mock, not cached data.
           </p>
         </div>
         <div class="feature">
-          <h3>Never drops a message</h3>
+          <h3>No browser keybinding theft</h3>
           <p>
-            Messages sent mid-turn are queued per-session in SQLite and dispatched in order once the
-            current turn finishes — including recovery if the app crashes mid-send.
-          </p>
-        </div>
-        <div class="feature">
-          <h3>Your editor, your call</h3>
-          <p>
-            Jump from a tool call straight into VS Code, Cursor, Zed, Sublime, WebStorm, vim, or any
-            custom binary you configure.
-          </p>
-        </div>
-        <div class="feature">
-          <h3>You approve every tool call</h3>
-          <p>
-            Permission requests from the agent block the turn until you respond — allow once, allow
-            always, or reject — right where the tool call happened.
-          </p>
-        </div>
-        <div class="feature">
-          <h3>Sign in, no tokens in sight</h3>
-          <p>
-            Runs the CLI's own <code>copilot login</code> device-code flow and shows you the code.
-            The token exchange stays entirely inside the CLI process.
+            Each tab embeds the codespace's own <code>github.dev</code> web editor directly in an
+            Electron <code>&lt;webview&gt;</code>, inside a dedicated app window with no browser
+            chrome capturing shortcuts before the editor sees them.
           </p>
         </div>
         <div class="feature">
           <h3>A real terminal, not a log</h3>
           <p>
-            A PTY-backed terminal panel (node-pty + xterm.js, the same stack VS Code uses) for running
-            your own commands, plus a live "Agent Output" tab streaming the agent process's own stderr.
+            A PTY-backed terminal panel (node-pty + xterm.js, the same stack VS Code uses) for
+            running local commands, completely independent of any codespace tab.
           </p>
         </div>
         <div class="feature">
-          <h3>Setup wizard on first launch</h3>
+          <h3>Right Shift → quick browser</h3>
           <p>
-            Detects the bundled CLI, any system-installed <code>copilot</code>, and your Node.js/npm
-            versions, with a one-click "install globally" option.
+            Press Right Shift anywhere to pop up a small in-app browser — a URL bar plus
+            back/forward/reload — for visiting any site without leaving the app. Press it again to
+            close.
           </p>
         </div>
         <div class="feature">
-          <h3>Rules the CLI already understands</h3>
+          <h3>No token handling</h3>
           <p>
-            Edit <code>.github/copilot-instructions.md</code> right from Settings — the same
-            repo-level rules file the CLI's own <code>/init</code> command uses.
+            Listing and opening codespaces both shell out to the <code>gh</code> CLI you already have
+            signed in. This app never sees, stores, or transmits a GitHub token itself.
           </p>
         </div>
         <div class="feature">
@@ -103,27 +85,30 @@
           <li>
             <span class="steps__index">1</span>
             <div>
-              <h4>Spawn the real CLI</h4>
-              <p>The Electron main process launches <code>copilot --acp</code> as a child process.</p>
+              <h4>Ask <code>gh</code> for your codespaces</h4>
+              <p>
+                <code>gh api user/codespaces</code> returns each codespace's name, repository,
+                state, and — the important part — its real <code>web_url</code>.
+              </p>
             </div>
           </li>
           <li>
             <span class="steps__index">2</span>
             <div>
-              <h4>Speak its protocol</h4>
+              <h4>Embed it directly</h4>
               <p>
-                Newline-delimited JSON-RPC over stdio — <code>initialize</code>, <code>session/new</code>,
-                <code>session/prompt</code> — with streamed <code>session/update</code> notifications.
+                That URL goes straight into an Electron <code>&lt;webview&gt;</code> as a new tab —
+                the exact same editor github.dev serves, just inside a native window.
               </p>
             </div>
           </li>
           <li>
             <span class="steps__index">3</span>
             <div>
-              <h4>Render it properly</h4>
+              <h4>Keep your own tools alongside it</h4>
               <p>
-                Agent messages, thoughts, plans and tool calls land in a real React UI, not a terminal
-                pane.
+                A real local terminal and a quick in-app browser are one click (or one keypress) away,
+                independent of whatever codespace tab is active.
               </p>
             </div>
           </li>

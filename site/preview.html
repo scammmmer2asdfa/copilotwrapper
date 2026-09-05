@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Preview — Copilot Desktop</title>
-    <meta name="description" content="A look at the Copilot Desktop UI: session rail, chat log, and status rail." />
+    <meta name="description" content="A look at the Copilot Desktop UI: codespace tabs, the terminal panel, and the quick-browse popup." />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -25,7 +25,7 @@
     <main>
       <section class="page-header">
         <h1>Preview</h1>
-        <p class="page-header__sub">Session rail on the left, chat log in the middle, live status on the right.</p>
+        <p class="page-header__sub">Codespace tabs on the left, the embedded editor filling the window.</p>
       </section>
 
       <section class="preview">
@@ -37,21 +37,31 @@
           </div>
           <div class="mock-window__body">
             <div class="mock-rail">
-              <div class="mock-icon mock-icon--active">CD</div>
-              <div class="mock-icon">S2</div>
-              <div class="mock-icon">S3</div>
+              <div class="mock-icon mock-icon--plus">+</div>
+              <div class="mock-icon mock-icon--active">JU</div>
+              <div class="mock-icon">CS</div>
             </div>
-            <div class="mock-log">
-              <div class="mock-bubble mock-bubble--user">refactor the queue drain loop</div>
-              <div class="mock-bubble mock-bubble--agent">Reading src/main/agent-manager.ts…</div>
-              <div class="mock-bubble mock-bubble--tool"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="vertical-align: -1px"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.1-3.1a5 5 0 0 1-6.4 6.4L7 20l-3-3 7.6-7.6a5 5 0 0 1 6.4-6.4z"/></svg> read_file · completed</div>
-              <div class="mock-bubble mock-bubble--agent">Done — queue now drains one item at a time.</div>
+            <div class="mock-editor">
+              <div class="mock-editor__bar">jubilant-trout-69pvvxx97p57c49r6.github.dev</div>
+              <div class="mock-editor__body">github.dev editor, embedded directly</div>
             </div>
-            <div class="mock-status">
-              <div><span class="mock-status__label">Connection</span><span class="mock-pill">connected</span></div>
-              <div><span class="mock-status__label">Queue</span><span>0 pending</span></div>
-              <div><span class="mock-status__label">Mode</span><span>Agent</span></div>
+          </div>
+        </div>
+
+        <h2 style="margin-top: 48px">Quick browse (Right Shift)</h2>
+        <div class="mock-window" aria-hidden="true">
+          <div class="mock-window__titlebar">
+            <span class="mock-dot mock-dot--red"></span>
+            <span class="mock-dot mock-dot--yellow"></span>
+            <span class="mock-dot mock-dot--green"></span>
+          </div>
+          <div class="mock-window__body mock-window__body--browse">
+            <div class="mock-browse-bar">
+              <span>←</span><span>→</span><span>⟳</span>
+              <div class="mock-browse-bar__url">Type a URL and press Enter…</div>
+              <span class="mock-browse-bar__go">Go</span>
             </div>
+            <div class="mock-editor__body">Enter a URL above to browse it in-app.</div>
           </div>
         </div>
       </section>

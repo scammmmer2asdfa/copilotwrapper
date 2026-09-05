@@ -5,11 +5,11 @@ import '@xterm/xterm/css/xterm.css';
 
 interface Props {
   id: string;
-  cwd: string;
+  cwd?: string;
 }
 
 /** A real, PTY-backed terminal (node-pty in the main process) — an actual shell, not a log view. */
-export function TerminalPanel({ id, cwd }: Props): React.JSX.Element {
+export function TerminalPanel({ id, cwd = '' }: Props): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

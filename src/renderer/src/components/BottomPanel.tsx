@@ -1,53 +1,31 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import { TerminalPanel } from './TerminalPanel';
 import { Icon } from './Icon';
 import { useEscapeKey } from '../useEscapeKey';
 
 interface Props {
-  cwd: string;
   onClose: () => void;
 }
 
-/** Bottom panel with a real terminal and a live view of the agent's own stderr — like VS Code's Terminal/Output split. */
-export function BottomPanel({ cwd, onClose }: Props): React.JSX.Element {
-  const [tab, setTab] = useState<'terminal' | 'agent-output'>('terminal');
-  const [agentOutput, setAgentOutput] = useState('');
-  const outputRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const off = window.copilotDesktop.agent.onStderr((chunk: string) => setAgentOutput((prev) => prev + chunk));
-    return off;
-  }, []);
-
-  useEffect(() => {
-    outputRef.current?.scrollTo({ top: outputRef.current.scrollHeight });
-  }, [agentOutput, tab]);
-
-  // Only close on Escape when the terminal itself isn't focused - a real
-  // shell (or vim, etc.) needs Escape to reach it, not close the panel.
-  useEscapeKey(onClose, tab === 'agent-output');
+/** Bottom terminal panel — a real shell (node-pty), independent of any codespace tab. */
+export function BottomPanel({ onClose }: Props): React.JSX.Element {
+  // Escape must reach the real shell (vim, etc.) rather than closing the
+  // panel, so this only listens when the terminal surface itself isn't
+  // where focus is - handled by TerminalPanel capturing its own keydowns;
+  // here we simply don't bind Escape globally at all for this panel.
+  useEscapeKey(onClose, false);
 
   return (
     <div className="bottom-panel">
       <div className="bottom-panel__tabs">
-        <button className={tab === 'terminal' ? 'active' : ''} onClick={() => setTab('terminal')}>
-          Terminal
-        </button>
-        <button className={tab === 'agent-output' ? 'active' : ''} onClick={() => setTab('agent-output')}>
-          Agent Output
-        </button>
+        <span className="bottom-panel__title">Terminal</span>
         <button className="bottom-panel__close" onClick={onClose} title="Close panel">
           <Icon name="close" size={14} />
         </button>
       </div>
-      <div className="bottom-panel__body" style={{ display: tab === 'terminal' ? 'block' : 'none' }}>
-        <TerminalPanel id="main" cwd={cwd} />
+      <div className="bottom-panel__body">
+        <TerminalPanel id="main" />
       </div>
-      {tab === 'agent-output' && (
-        <div className="bottom-panel__body bottom-panel__output mono" ref={outputRef}>
-          <pre>{agentOutput || '(no output yet)'}</pre>
-        </div>
-      )}
     </div>
   );
 }

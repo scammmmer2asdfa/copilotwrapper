@@ -2,7 +2,6 @@ import { test, expect, _electron as electron, type ElectronApplication, type Pag
 import { mkdtempSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { chmodSync } from 'node:fs';
 
 const BUILT_MAIN = join(process.cwd(), 'out', 'main', 'index.js');
 
@@ -12,21 +11,13 @@ let userDataDir: string;
 
 /**
  * Real E2E tests against the actual built app (npm run build first), driven
- * through the genuine Electron process via Playwright's Electron support —
- * not a mocked renderer. Skipped if the build output doesn't exist.
+ * through the genuine Electron process via Playwright's Electron support.
+ * The `gh` CLI on a CI runner isn't authenticated as a real user, so
+ * codespace-listing assertions only check the picker handles that
+ * gracefully (loading -> some non-loading state), not specific real data.
  */
 test.beforeAll(async () => {
   test.skip(!existsSync(BUILT_MAIN), 'Run `npm run build` before the e2e suite (out/main/index.js not found)');
-
-  // Best-effort: dev-mode vendored CLI binaries lose +x after a fresh git
-  // checkout on posix (git doesn't always preserve the bit through LFS).
-  for (const p of ['resources/copilot-cli/linux-x64/copilot', 'resources/copilot-cli/darwin-arm64/copilot', 'resources/copilot-cli/darwin-x64/copilot']) {
-    try {
-      chmodSync(join(process.cwd(), p), 0o755);
-    } catch {
-      // not on this platform / not present, fine
-    }
-  }
 
   userDataDir = mkdtempSync(join(tmpdir(), 'copilot-desktop-e2e-'));
   electronApp = await electron.launch({
@@ -42,64 +33,68 @@ test.afterAll(async () => {
   if (userDataDir) rmSync(userDataDir, { recursive: true, force: true });
 });
 
-test.describe.serial('Copilot Desktop', () => {
-  test('shows the setup wizard on first launch', async () => {
-    await expect(window.getByText('Welcome to Copilot Desktop')).toBeVisible();
-    await window.screenshot({ path: 'test-results/screenshots/01-setup-wizard.png' });
+test.describe.serial('Copilot Desktop (Codespaces shell)', () => {
+  test('shows the empty state with no codespaces open', async () => {
+    await expect(window.getByText('No codespaces open.')).toBeVisible();
+    await expect(window.locator('.app__empty').getByRole('button', { name: 'Open a codespace' })).toBeVisible();
   });
 
-  test('setup wizard shows environment detection results', async () => {
-    await expect(window.getByText(/Copilot CLI \(bundled\)/)).toBeVisible();
-    await expect(window.getByText(/Node\.js:/)).toBeVisible();
+  test('opens the codespace picker and it resolves out of the loading state', async () => {
+    await window.locator('.icon-rail__new').click();
+    await expect(window.getByRole('heading', { name: 'Open a Codespace' })).toBeVisible();
+    await expect(window.getByText('Loading your codespaces…')).toBeHidden({ timeout: 15000 });
+    await window.screenshot({ path: 'test-results/screenshots/01-codespace-picker.png' });
   });
 
-  test('dismissing the setup wizard reveals the main layout', async () => {
-    await window.getByRole('button', { name: 'Continue' }).click();
-    await expect(window.locator('.icon-rail')).toBeVisible();
-    await expect(window.locator('.chat-log')).toBeVisible();
-    await expect(window.locator('.status-rail')).toBeVisible();
-    await window.screenshot({ path: 'test-results/screenshots/02-main-layout.png' });
+  test('opening a codespace (if any are available) adds a tab', async () => {
+    const openButton = window.locator('.codespace-picker__list button', { hasText: 'Open' }).first();
+    if ((await openButton.count()) === 0) {
+      test.skip(true, 'no real codespaces available to this gh account in this environment');
+    }
+    await openButton.click();
+    await expect(window.locator('.icon-rail__item')).toHaveCount(1);
+    await expect(window.locator('.codespace-view webview')).toHaveCount(1);
+    await window.screenshot({ path: 'test-results/screenshots/02-codespace-tab.png' });
   });
 
-  test('connects to the real copilot --acp subprocess', async () => {
-    await expect(window.locator('.status-pill')).toHaveText('connected', { timeout: 15000 });
-  });
-
-  test('opens the settings panel and switches theme', async () => {
-    await window.locator('.icon-rail__settings').click();
-    await expect(window.getByRole('heading', { name: 'Settings' })).toBeVisible();
-    await window.screenshot({ path: 'test-results/screenshots/03-settings.png' });
-
-    await window.getByLabel('Theme').selectOption('github-dark');
-    await expect(window.locator('html')).toHaveAttribute('data-theme', 'github-dark');
-    await window.screenshot({ path: 'test-results/screenshots/04-settings-github-dark.png' });
-
-    // Reset back so later tests/screenshots aren't affected by theme order.
-    await window.getByLabel('Theme').selectOption('graphite');
-    await window.getByRole('button', { name: 'Close' }).click();
-  });
-
-  test('opens the terminal panel with Terminal and Agent Output tabs', async () => {
+  test('opens the terminal panel and closes it', async () => {
     await window.locator('.icon-rail__terminal').click();
     const bottomPanel = window.locator('.bottom-panel');
     await expect(bottomPanel).toBeVisible();
-    await expect(bottomPanel.getByRole('button', { name: 'Terminal' })).toBeVisible();
-    await expect(bottomPanel.getByRole('button', { name: 'Agent Output' })).toBeVisible();
-    await window.screenshot({ path: 'test-results/screenshots/05-terminal-panel.png' });
+    await expect(bottomPanel.getByText('Terminal')).toBeVisible();
+    await window.screenshot({ path: 'test-results/screenshots/03-terminal-panel.png' });
 
-    await bottomPanel.getByRole('button', { name: 'Agent Output' }).click();
-    await expect(window.locator('.bottom-panel__output')).toBeVisible();
-    await window.screenshot({ path: 'test-results/screenshots/06-agent-output.png' });
-
-    // Escape closes it while the Agent Output (non-interactive) tab is active.
-    await window.keyboard.press('Escape');
+    await window.locator('.bottom-panel__close').click();
     await expect(bottomPanel).toBeHidden();
   });
 
-  test('Escape closes the settings panel', async () => {
+  test('opens the theme menu and switches theme', async () => {
     await window.locator('.icon-rail__settings').click();
-    await expect(window.getByRole('heading', { name: 'Settings' })).toBeVisible();
+    await expect(window.locator('.theme-menu')).toBeVisible();
+    await window.screenshot({ path: 'test-results/screenshots/04-theme-menu.png' });
+
+    await window.locator('.theme-menu button', { hasText: /^GitHub Dark$/ }).click();
+    await expect(window.locator('html')).toHaveAttribute('data-theme', 'github-dark');
+    await window.screenshot({ path: 'test-results/screenshots/05-github-dark.png' });
+
+    // Reset so later runs/screenshots aren't affected by theme order.
+    await window.locator('.icon-rail__settings').click();
+    await window.locator('.theme-menu button', { hasText: 'Graphite' }).click();
+  });
+
+  test('Right Shift opens the quick browse panel, Escape closes it', async () => {
+    await window.keyboard.press('ShiftRight');
+    await expect(window.locator('.modal--browse')).toBeVisible();
+    await window.screenshot({ path: 'test-results/screenshots/06-quick-browse.png' });
+
     await window.keyboard.press('Escape');
-    await expect(window.getByRole('heading', { name: 'Settings' })).toBeHidden();
+    await expect(window.locator('.modal--browse')).toBeHidden();
+  });
+
+  test('Right Shift again reopens it (toggle behavior)', async () => {
+    await window.keyboard.press('ShiftRight');
+    await expect(window.locator('.modal--browse')).toBeVisible();
+    await window.keyboard.press('ShiftRight');
+    await expect(window.locator('.modal--browse')).toBeHidden();
   });
 });

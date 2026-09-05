@@ -3,15 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Copilot Desktop — a native shell for the GitHub Copilot CLI</title>
+    <title>Copilot Desktop — a native shell for GitHub Codespaces</title>
     <meta
       name="description"
-      content="An Electron shell around the official GitHub Copilot CLI, speaking its Agent Client Protocol directly. Sessions, queued messages, tool permissions, and plans in a real desktop UI."
+      content="A native Electron shell for GitHub Codespaces. Opens your codespaces' real web editors in a dedicated app window so your browser's own keybindings never intercept them."
     />
     <meta property="og:title" content="Copilot Desktop" />
     <meta
       property="og:description"
-      content="A native desktop client for the official GitHub Copilot CLI, built on the Agent Client Protocol."
+      content="A native desktop shell for GitHub Codespaces — no browser keybinding interception, a real embedded terminal, and a quick in-app browser."
     />
     <meta property="og:type" content="website" />
     <link rel="stylesheet" href="styles.css" />
@@ -34,35 +34,35 @@
     <main>
       <section class="hero">
         <span class="hero__eyebrow">Unofficial · Open source · MIT</span>
-        <h1>A native shell for GitHub Copilot CLI.</h1>
+        <h1>A native shell for GitHub Codespaces.</h1>
         <p class="hero__sub">
-          Copilot Desktop drives the real <code>copilot --acp</code> agent over its own Agent Client
-          Protocol — no scraped terminal output, no reimplemented chat engine. Sessions, queued
-          messages, tool permissions and plans, all in a proper desktop UI.
+          Copilot Desktop opens your codespaces' real web editor directly inside a dedicated app
+          window — not a browser tab — so your OS browser's own keyboard shortcuts never steal
+          keystrokes meant for the editor running inside it.
         </p>
         <div class="hero__actions">
           <a class="button button--primary" href="download.html">Download</a>
           <a class="button" href="https://github.com/scammmmer2asdfa/copilotwrapper">View source</a>
         </div>
         <div class="hero__stats">
-          <div><strong>4</strong><span>platform builds</span></div>
-          <div><strong>32</strong><span>native slash commands</span></div>
-          <div><strong>0</strong><span>tokens handled by the UI</span></div>
+          <div><strong>0</strong><span>tokens handled by this app</span></div>
+          <div><strong>1</strong><span>keypress to browse (Right Shift)</span></div>
+          <div><strong>3</strong><span>platforms (mac / win / linux)</span></div>
         </div>
       </section>
 
       <section class="teaser-grid">
         <a class="teaser-card" href="features.html">
           <h3>Features →</h3>
-          <p>Real ACP, a durable send queue, permission prompts, editor handoff, and more.</p>
+          <p>Codespace tabs, a real embedded terminal, a quick in-app browser, and five themes.</p>
         </a>
         <a class="teaser-card" href="preview.html">
           <h3>Preview →</h3>
-          <p>See the session rail, chat log, and status rail in a mock window.</p>
+          <p>See the codespace tab rail, the terminal panel, and the quick-browse popup.</p>
         </a>
         <a class="teaser-card" href="faq.html">
           <h3>FAQ →</h3>
-          <p>What this is, what it isn't, and where your data lives.</p>
+          <p>What this is, what it isn't, and how it talks to GitHub.</p>
         </a>
       </section>
     </main>
@@ -81,4 +81,3 @@
     <script src="theme.js"></script>
   </body>
 </html>
-

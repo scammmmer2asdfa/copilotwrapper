@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FAQ — Copilot Desktop</title>
-    <meta name="description" content="What Copilot Desktop is, what it isn't, and where your data lives." />
+    <meta name="description" content="What Copilot Desktop is, what it isn't, and how it talks to GitHub." />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -30,67 +30,52 @@
       <section class="faq">
         <details>
           <summary>Is this an official GitHub product?</summary>
-          <p>No. Copilot Desktop is an independent, unofficial client that wraps the official
-            <code>@github/copilot</code> CLI. It is not affiliated with or endorsed by GitHub.</p>
+          <p>No. Copilot Desktop is an independent, unofficial shell for GitHub Codespaces. It is not
+            affiliated with or endorsed by GitHub.</p>
         </details>
         <details>
-          <summary>Do I need my own Copilot subscription?</summary>
-          <p>Yes — the app shells out to the real CLI's own login and subscription checks; it doesn't
-            provide any access on its own.</p>
+          <summary>How does it access my codespaces?</summary>
+          <p>It shells out to the real <code>gh</code> CLI (<code>gh api user/codespaces</code>), the
+            same tool you'd use in a terminal. It uses whatever account you already have signed into
+            <code>gh</code> — this app never handles a GitHub token itself.</p>
         </details>
         <details>
-          <summary>Where does my code and chat history live?</summary>
-          <p>Locally, in a SQLite database in your OS's app-data directory. Nothing is sent anywhere
-            except what the Copilot CLI itself sends as part of a normal session.</p>
-        </details>
-        <details>
-          <summary>Which platforms are supported?</summary>
-          <p>macOS (Apple Silicon and Intel), Windows x64, and Linux x64, each bundling only its own
-            platform's CLI binary.</p>
-        </details>
-        <details>
-          <summary>How do I get the CLI itself?</summary>
-          <p>You don't have to — the app bundles it. The actual <code>copilot</code> executables for
-            all four supported platforms are committed directly in this repository (via Git LFS)
-            under <code>resources/copilot-cli/</code>, so every installer and every dev clone already
-            has what it needs with no separate download step.</p>
+          <summary>Do I need the `gh` CLI installed?</summary>
+          <p>Yes, and signed in (<code>gh auth login</code>) — the codespace picker calls it directly.
+            If it's missing or unauthenticated, the picker shows that error instead of a list.</p>
         </details>
         <details>
           <summary>Is there a real terminal in the app, or just a log?</summary>
           <p>A real one. The bottom panel's Terminal tab is backed by
             <a href="https://www.npmjs.com/package/node-pty">node-pty</a> spawning an actual shell
             process, rendered with <a href="https://xtermjs.org/">xterm.js</a> — the same combination
-            VS Code's own integrated terminal uses. It runs independently of whatever the agent is
-            doing. The Agent Output tab next to it is different: a live, read-only stream of the
-            agent subprocess's own stderr.</p>
+            VS Code's own integrated terminal uses. It's independent of any codespace tab.</p>
         </details>
         <details>
-          <summary>Can I give the agent project-specific rules?</summary>
-          <p>Yes — Settings → Agent instructions reads and writes
-            <code>.github/copilot-instructions.md</code> in the current session's directory, the same
-            file the CLI's own <code>/init</code> command and repo-level instruction loading use.</p>
+          <summary>What does Right Shift do?</summary>
+          <p>Toggles a small, transient in-app browser — type a URL, browse it embedded in the app,
+            press Right Shift again (or Escape) to close it. It's not tied to any codespace tab and
+            doesn't persist between launches.</p>
+        </details>
+        <details>
+          <summary>Why not just use a browser tab for Codespaces?</summary>
+          <p>Browsers intercept a lot of keyboard shortcuts (Ctrl+W, Ctrl+T, Cmd+, etc.) before a page
+            running inside them ever sees the keystroke — a real, common annoyance for a
+            browser-hosted editor like the Codespaces web UI. A dedicated app window has no such
+            browser chrome capturing input first.</p>
         </details>
         <details>
           <summary>What themes are available?</summary>
           <p>Graphite and Paper (this app's own two), plus GitHub Dark, GitHub Dark Dimmed, and GitHub
-            Light — real palettes from GitHub's public Primer design tokens, matching VS Code's own
-            GitHub Theme extension.</p>
-        </details>
-        <details>
-          <summary>Does it check whether I have Node.js or the CLI installed?</summary>
-          <p>On first launch, a setup screen shows what's detected: the bundled CLI (always present),
-            any <code>copilot</code> already on your <code>PATH</code>, and your system Node.js/npm
-            versions — with a one-click option to install the CLI globally if you want to use it from
-            your own terminal too.</p>
+            Light — real palettes from GitHub's public Primer design tokens.</p>
         </details>
         <details>
           <summary>macOS says the app "contains malware" / won't open — what do I do?</summary>
           <p>The macOS build isn't code-signed or notarized by Apple (that requires a paid Apple
             Developer Program membership this project doesn't have), so Gatekeeper blocks it by
             default the same way it would any unsigned download. To run it anyway: open
-            <strong>System Settings → Privacy &amp; Security</strong>, scroll down, and click
-            <strong>"Open Anyway"</strong> next to the message about Copilot Desktop (appears after
-            the first blocked attempt). Alternatively, in Terminal:
+            <strong>System Settings → Privacy & Security</strong>, scroll down, and click
+            <strong>"Open Anyway"</strong>. Alternatively, in Terminal:
             <code>xattr -cr /Applications/Copilot&nbsp;Desktop.app</code> to strip the quarantine flag.
             This isn't a bug in the app — it's expected for any unsigned open-source Mac app.</p>
         </details>

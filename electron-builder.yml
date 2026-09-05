@@ -19,9 +19,6 @@ publish:
   owner: scammmmer2asdfa
   repo: copilotwrapper
 
-# Each target only bundles its own platform's CLI binary. electron-builder's
-# ${arch} macro resolves per-build (arm64/x64) — do NOT use string ternaries
-# here, they are not valid macro syntax and silently break YAML parsing.
 mac:
   category: public.app-category.developer-tools
   target:
@@ -29,22 +26,12 @@ mac:
       arch:
         - arm64
         - x64
-  extraResources:
-    - from: resources/copilot-cli/darwin-${arch}/copilot
-      to: copilot-cli/copilot
-    - from: resources/copilot-cli/LICENSE.md
-      to: copilot-cli/LICENSE.md
 
 win:
   target:
     - target: nsis
       arch:
         - x64
-  extraResources:
-    - from: resources/copilot-cli/win32-x64/copilot.exe
-      to: copilot-cli/copilot.exe
-    - from: resources/copilot-cli/LICENSE.md
-      to: copilot-cli/LICENSE.md
 
 linux:
   target:
@@ -52,11 +39,6 @@ linux:
       arch:
         - x64
   category: Development
-  extraResources:
-    - from: resources/copilot-cli/linux-x64/copilot
-      to: copilot-cli/copilot
-    - from: resources/copilot-cli/LICENSE.md
-      to: copilot-cli/LICENSE.md
 
 nsis:
   oneClick: false

@@ -6,7 +6,7 @@
     <title>Docs — Copilot Desktop</title>
     <meta
       name="description"
-      content="How Copilot Desktop actually works: the Agent Client Protocol, the send queue, auth, terminal, and IPC surface."
+      content="How Copilot Desktop actually works: the gh CLI integration, the embedded webview, the terminal, and the security model."
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -29,135 +29,70 @@
       <section class="page-header">
         <h1>Docs</h1>
         <p class="page-header__sub">
-          What this app actually does under the hood, for people who want more than "it's an AI chat
-          app."
+          What this app actually does under the hood, for people who want more than "it opens
+          Codespaces."
         </p>
       </section>
 
       <nav class="docs__toc">
-        <a href="#protocol">The protocol</a>
-        <a href="#queue">The send queue</a>
-        <a href="#auth">Sign-in</a>
-        <a href="#cli-location">CLI location</a>
+        <a href="#listing">Listing codespaces</a>
+        <a href="#embedding">Embedding the editor</a>
         <a href="#terminal">Terminal</a>
-        <a href="#instructions">Agent instructions</a>
+        <a href="#browse">Quick browse</a>
         <a href="#security">Security model</a>
-        <a href="#vendoring">Vendored CLI binaries</a>
+        <a href="#why-app">Why an app, not a tab</a>
       </nav>
 
-      <section id="protocol" class="docs__section">
-        <h2>The protocol: ACP, not screen-scraping</h2>
+      <section id="listing" class="docs__section">
+        <h2>Listing your codespaces</h2>
         <p>
-          The official Copilot CLI ships an <code>--acp</code> flag that starts it as an
-          <strong>Agent Client Protocol</strong> server, speaking newline-delimited JSON-RPC over its
-          own stdin/stdout. Copilot Desktop's Electron main process spawns exactly that process and
-          talks to it directly — there is no terminal emulator parsing colored text, no regular
-          expressions guessing when a response is "done," and no separate reimplementation of chat
-          logic. The methods this app calls are the same ones any ACP-speaking client would:
-        </p>
-        <ul>
-          <li><code>initialize</code> — capability + auth-method negotiation, done once per process.</li>
-          <li><code>session/new</code> — creates a session for a working directory; the CLI immediately
-            starts pushing <code>session/update</code> notifications, including the list of native
-            slash commands available in that session.</li>
-          <li><code>session/prompt</code> — sends a user turn; resolves once the agent's turn is fully
-            finished (its actual output arrives incrementally via notifications while this is pending).</li>
-          <li><code>session/cancel</code>, <code>session/set_mode</code> — interrupt a turn, or switch
-            between the CLI's own Agent / Plan / Autopilot modes.</li>
-        </ul>
-        <p>
-          Two kinds of messages flow the other way: <code>session/update</code> notifications (agent
-          message/thought chunks, plans, tool call start/update events) that this app folds into a
-          single growing chat log rather than one bubble per network chunk, and inbound
-          <code>session/request_permission</code> <em>requests</em> — the agent itself asking
-          permission before running a tool — which this app turns into a blocking modal dialog. Nothing
-          proceeds in that session until the dialog is answered or cancelled.
+          The "+" button in the icon rail shells out to <code>gh api user/codespaces</code> — the raw
+          GitHub REST API via the <code>gh</code> CLI you already have installed and signed in. This
+          app deliberately does <strong>not</strong> use <code>gh codespace list --json</code> for
+          this, even though it's the more obvious command: that command's JSON output doesn't include
+          a <code>web_url</code> field (verified against the real CLI's own documented JSON fields
+          before writing this code), and that URL is exactly what gets embedded in the app. The raw
+          API response does include it, so that's what this app calls instead.
         </p>
       </section>
 
-      <section id="queue" class="docs__section">
-        <h2>The send queue: why messages never get dropped</h2>
+      <section id="embedding" class="docs__section">
+        <h2>Embedding the editor directly</h2>
         <p>
-          <code>session/prompt</code> is a single in-flight call per session — you can't fire a second
-          prompt while the first is still resolving without it interrupting the running turn. But
-          people don't wait; they keep typing follow-ups while the agent is still working. Copilot
-          Desktop handles this with a small SQLite-backed queue (<code>src/main/db.ts</code>,
-          <code>src/main/agent-manager.ts</code>):
-        </p>
-        <ol>
-          <li>Every sent message is written to a <code>messages</code> table immediately, so the log is
-            always accurate regardless of send timing.</li>
-          <li>If no turn is in flight for that session, the message is dispatched right away.</li>
-          <li>If a turn <em>is</em> in flight, the message is inserted into a <code>queue</code> table
-            with status <code>queued</code> instead.</li>
-          <li>When the in-flight turn resolves, the queue is drained for that session — one item at a
-            time, in insertion order, each marked <code>sending</code> right before dispatch and
-            <code>sent</code> (or <code>failed</code>, without blocking anything behind it) after.</li>
-        </ol>
-        <p>
-          The important part: if the app crashes or is killed while an item is marked
-          <code>sending</code>, that item is not lost. <code>openDatabase()</code> resets any row still
-          marked <code>sending</code> back to <code>queued</code> the next time it opens — so the
-          message gets retried instead of silently disappearing. This exact behavior is covered by an
-          automated test that reopens the database mid-"crash" and asserts the row comes back as
-          queued.
-        </p>
-      </section>
-
-      <section id="auth" class="docs__section">
-        <h2>Sign-in: zero tokens in this app</h2>
-        <p>
-          This app never sees, stores, or transmits a Copilot access token. The CLI's own
-          <code>initialize()</code> response includes an <code>authMethods</code> list, and each
-          method carries a <code>_meta['terminal-auth']</code> object with the exact command and
-          arguments the CLI wants run to authenticate — in practice, <code>copilot login</code>. All
-          this app does is spawn that exact command as its own child process and scrape the
-          device-code and verification URL it prints to stdout/stderr for display in a dialog. The
-          actual OAuth device-code exchange, and the resulting token, live entirely inside that CLI
-          process and whatever credential store it uses on your machine.
-        </p>
-      </section>
-
-      <section id="cli-location" class="docs__section">
-        <h2>Choosing which CLI binary runs</h2>
-        <p>
-          Settings → "Copilot CLI location" lets you point the app at a <code>copilot</code> binary you
-          installed yourself (for example via <code>npm install -g @github/copilot</code>) instead of
-          the one bundled with the app. Two reasons you might want this: you already keep the CLI
-          updated yourself and want the app to use that exact version, or you're hitting macOS
-          Gatekeeper's quarantine block on the downloaded app bundle — an npm-installed binary is
-          never quarantined the way a browser-downloaded file is, so pointing at one sidesteps that
-          specific problem entirely for the CLI process (the app bundle itself still needs the usual
-          "Open Anyway" workaround once).
+          Each codespace's <code>web_url</code> (something like
+          <code>https://&lt;codespace-name&gt;.github.dev</code>) goes straight into an Electron
+          <code>&lt;webview&gt;</code> element as a tab. That's the exact same web editor GitHub
+          serves at that URL — nothing about the editor itself is modified, proxied, or
+          reimplemented. What's different is where it's rendered: inside a dedicated native window
+          instead of a browser tab, so the browser's own reserved keyboard shortcuts never get a
+          chance to intercept a keystroke meant for the editor.
         </p>
       </section>
 
       <section id="terminal" class="docs__section">
         <h2>The embedded terminal</h2>
         <p>
-          The bottom panel's "Terminal" tab is a real, PTY-backed shell — <a
+          The bottom panel's Terminal tab is a real, PTY-backed shell — <a
             href="https://www.npmjs.com/package/node-pty"
             >node-pty</a
           >
-          in the main process spawns an actual <code>bash</code>/<code>powershell.exe</code> process
-          per terminal, and <a href="https://xtermjs.org/">xterm.js</a> renders it in the renderer,
-          the same combination VS Code's own integrated terminal uses. Keystrokes go renderer → IPC →
-          PTY; PTY output goes the other way. It is entirely independent of the agent session running
-          alongside it — you can run your own commands without touching what the agent is doing. The
-          "Agent Output" tab next to it is different: it's a live, read-only stream of the
-          <code>copilot --acp</code> subprocess's own stderr, useful for seeing what the agent process
-          itself is logging in real time.
+          in the main process spawns an actual <code>bash</code>/<code>powershell.exe</code> process,
+          and <a href="https://xtermjs.org/">xterm.js</a> renders it in the renderer, the same
+          combination VS Code's own integrated terminal uses. It runs entirely independently of any
+          open codespace tab — it's a local shell on your own machine, not a shell inside a
+          codespace.
         </p>
       </section>
 
-      <section id="instructions" class="docs__section">
-        <h2>Agent instructions</h2>
+      <section id="browse" class="docs__section">
+        <h2>Right Shift: quick, transient browsing</h2>
         <p>
-          Settings → "Agent instructions" reads and writes
-          <code>.github/copilot-instructions.md</code> in the current session's working directory —
-          the same repo-level rules file the real CLI's own instruction loading (and its
-          <code>/init</code> slash command) uses. This app doesn't invent a separate rules format; it
-          just gives you a convenient editor for the file the CLI already reads.
+          Pressing Right Shift alone (not as part of a combo like Shift+Tab — tracked via
+          keydown/keyup, not a single keypress check) toggles a small popup: a URL bar plus
+          back/forward/reload, backed by its own separate <code>&lt;webview&gt;</code>. It's
+          deliberately not persisted across restarts and not added as a permanent tab — it's meant for
+          a quick "let me check something" without leaving the app, not a second browsing session to
+          manage.
         </p>
       </section>
 
@@ -168,23 +103,23 @@
           <code>contextIsolation: true</code>. It has no direct access to Node.js, Electron internals,
           or the filesystem — every capability it has is a specific, typed method exposed through
           <code>contextBridge</code> in <code>src/preload/index.ts</code>, backed by an explicit IPC
-          channel list in <code>src/shared/ipc.ts</code>. The renderer can ask the main process to
-          "open this file in an editor" or "start a terminal at this path," but it cannot execute
-          arbitrary Node code, and window navigation to external URLs is intercepted and redirected to
-          your OS's default browser rather than loaded in-app.
+          channel list in <code>src/shared/ipc.ts</code> (listing/opening codespaces, the terminal,
+          settings). The <code>&lt;webview&gt;</code> tags used for codespace tabs and the quick
+          browser are separate, isolated <code>webContents</code> with no access to that bridge and no
+          Node integration of their own — they're just displaying whatever page they're pointed at,
+          the same as a browser tab would.
         </p>
       </section>
 
-      <section id="vendoring" class="docs__section">
-        <h2>Why the CLI binaries are committed to this repo</h2>
+      <section id="why-app" class="docs__section">
+        <h2>Why an app instead of a browser tab</h2>
         <p>
-          <code>resources/copilot-cli/</code> contains the actual <code>copilot</code> executables for
-          all four supported platforms, tracked with Git LFS rather than fetched from npm at build
-          time. A clone of this repository (with Git LFS support) is a complete, working development
-          environment with no separate download step and no dependency on the npm registry being
-          reachable at build time. <code>scripts/fetch-cli.mjs</code> still exists — it's how these
-          vendored binaries get updated to a newer published CLI version, not how they're obtained for
-          day-to-day development.
+          Browsers reserve a lot of keyboard shortcuts for their own chrome — new tab, close tab,
+          switch tab, open settings — and a page running inside the browser (including a full VS Code
+          instance like the Codespaces web editor) never sees those keystrokes at all. That's a real,
+          widely reported annoyance for browser-hosted editors specifically. A dedicated Electron
+          window doesn't have that browser chrome in the way; the embedded editor gets first access to
+          keyboard input the same way a native desktop app would.
         </p>
       </section>
     </main>

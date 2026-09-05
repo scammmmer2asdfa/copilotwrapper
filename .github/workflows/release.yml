@@ -23,14 +23,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: chmod +x resources/copilot-cli/linux-x64/copilot
       - run: npm run build
       - name: Package (Linux AppImage, x64)
         run: npx electron-builder --linux --publish never
@@ -45,8 +42,6 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -70,14 +65,11 @@ jobs:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: chmod +x resources/copilot-cli/darwin-arm64/copilot resources/copilot-cli/darwin-x64/copilot
       - run: npm run build
       - name: Package (macOS dmg, arm64 + x64)
         run: npx electron-builder --mac --arm64 --x64 --publish never

@@ -1,106 +1,80 @@
 # Copilot Desktop
 
-An Electron shell around the official [GitHub Copilot CLI](https://www.npmjs.com/package/@github/copilot). The main
-process spawns `copilot --acp` (the CLI's Agent Client Protocol server) and speaks newline-delimited
-JSON-RPC over its stdio directly — no scraped terminal output, no reimplemented chat engine, no
-guessed flags. This is an independent, unaffiliated client: it is not built or endorsed by GitHub.
+A native Electron shell for **GitHub Codespaces**. It lists the codespaces on your GitHub account
+(via the real `gh` CLI) and opens each one's own web editor (`github.dev`) directly inside a dedicated
+app window instead of a browser tab — so your OS browser's own keyboard shortcuts (Ctrl+W, Ctrl+T,
+Cmd+`,`, etc.) don't intercept keystrokes meant for the editor running inside it.
 
-## Why this exists
+This is an independent project, not affiliated with or endorsed by GitHub.
 
-The official Copilot CLI is a terminal application. That's great for scripting and for people who
-live in a terminal, but it means no persistent session history across restarts, no visual diffing of
-what a tool call actually touched, no way to run a completely unrelated shell command alongside a
-running agent turn without losing your place, and no GUI affordances for the things a chat agent
-naturally wants (a device-code sign-in screen, a permission dialog, a place to configure which editor
-"open this file" should use). Copilot Desktop is a thin, honest client on top of the same CLI and the
-same protocol it already exposes for exactly this purpose (ACP) — it adds a UI, a durable local
-database, and process management around the CLI, and nothing else. It does not reimplement any of the
-agent's actual behavior.
+## Why a dedicated app instead of just a browser tab
+
+The Codespaces web editor is a full copy of VS Code running in your browser. Browsers reserve a lot
+of keyboard shortcuts for themselves before a page ever sees them, which is a real, common annoyance
+for any browser-hosted editor. A dedicated Electron window has no such browser chrome capturing input
+first — keystrokes go straight to the embedded view.
+
+## Features
+
+- **Codespace tabs** — the icon rail lists your open codespaces as tabs (persisted across restarts in
+  a local SQLite database); the `+` button opens a picker backed by the real
+  `gh api user/codespaces` call, and each tab embeds that codespace's real `web_url` directly in an
+  Electron `<webview>`.
+- **A real embedded terminal** — a PTY-backed terminal panel (`node-pty` + `xterm.js`, the same stack
+  VS Code's own integrated terminal uses) for running local commands alongside your codespace tabs,
+  independent of any of them.
+- **Right Shift → quick browser** — press Right Shift anywhere to pop up a small in-app browser (URL
+  bar, back/forward/reload) for visiting any site without leaving the app or opening a real browser
+  tab. Press Right Shift again to close it.
+- **Five themes** — Graphite, Paper, and three real GitHub/Primer palettes (GitHub Dark, GitHub Dark
+  Dimmed, GitHub Light).
+- **No token handling** — codespace listing and opening both shell out to the `gh` CLI you already
+  have installed and signed in; this app never sees, stores, or transmits a GitHub token itself.
 
 ## Architecture
 
 ```
 Electron main process
-  └─ spawns: copilot --acp   (child_process, stdio pipes)
-       └─ speaks: newline-delimited JSON-RPC (Agent Client Protocol)
-            initialize, session/new, session/prompt, session/cancel, session/set_mode
-            ← session/update notifications (message/thought chunks, plans, tool calls)
-            ← session/request_permission (blocks the turn until the UI responds)
+  ├─ gh api user/codespaces        → list your codespaces (name, repo, state, real web_url)
+  ├─ gh codespace code -c <name> --web   → fallback: open a codespace in your OS browser
+  └─ node-pty                       → a real local shell for the terminal panel
 
 Electron renderer (React)
-  ← IPC ← main process ← ACP client ← copilot --acp subprocess
+  ├─ IconRail        — open codespace tabs, terminal toggle, theme menu
+  ├─ CodespaceView   — <webview src="https://<name>.github.dev"> per open tab
+  ├─ CodespacePicker — lists real codespaces from gh, lets you open one as a tab
+  ├─ QuickBrowsePanel — Right Shift; ad-hoc in-app browsing, not persisted
+  └─ BottomPanel     — the real terminal (node-pty)
 ```
 
-- **`src/main/acp-client.ts`** is the JSON-RPC layer: it frames/parses newline-delimited JSON over the
-  subprocess's stdio, tracks pending request IDs, and turns inbound notifications and requests into
-  Node `EventEmitter` events the rest of the app can subscribe to.
-- **`src/main/agent-manager.ts`** owns the subprocess's lifecycle and a per-session send queue backed
-  by SQLite (`src/main/db.ts`). If you send a message while a turn is already in flight, it's written
-  to the `queue` table with status `queued` rather than interrupting the current `session/prompt`
-  call. Once the turn resolves, the manager drains the queue for that session one item at a time, in
-  order. A message is marked `sending` right before dispatch; if the process crashes mid-send,
-  `openDatabase()` resets any `sending` row back to `queued` on the next launch — so a crash never
-  silently drops a message, it just gets retried.
-- **`src/main/auth.ts`** never touches a token. `initialize()`'s response includes
-  `authMethods[]._meta['terminal-auth']`, which is the exact command/args the *real* CLI wants run
-  (`copilot login`) to start its own device-code flow. This module just spawns that command and
-  regex-scrapes the device code and verification URL out of its stdout/stderr for display — the
-  actual OAuth/token exchange happens entirely inside the CLI process.
-- **`src/main/cli-locator.ts`** resolves which `copilot` binary to run, in order: an explicit
-  user-configured override, the packaged app's bundled binary, the vendored dev-mode binary (see
-  below), a locally installed `@github/copilot-<platform>` npm package, then `PATH`.
-- **`src/main/terminal-manager.ts`** owns real PTY sessions via [`node-pty`](https://www.npmjs.com/package/node-pty)
-  (the same library VS Code's own integrated terminal uses) — a genuine shell, not a simulated log.
-- **`src/preload`** is the only bridge between the renderer and Node/Electron APIs, via
-  `contextBridge.exposeInMainWorld`. The renderer never gets `nodeIntegration`; every capability it
-  has is an explicit, typed method on `window.copilotDesktop` (see `src/shared/ipc.ts` for the full
-  contract).
-
-## Features
-
-- **Real ACP client** — `initialize`, `session/new`, `session/prompt`, `session/cancel`,
-  `session/set_mode`, live `session/update` streaming (message/thought chunks, plans, tool calls), and
-  inbound `session/request_permission` that actually blocks the turn until you respond (allow once,
-  allow always, or reject) in a modal dialog, right where the tool call happened.
-- **A send queue that survives crashes** — messages sent mid-turn are queued per-session in SQLite and
-  dispatched in order once the current turn finishes; a message marked "sending" when the app reopens
-  gets reset to "queued" rather than lost.
-- **Device-code sign-in** — runs the CLI's own `copilot login` and shows you the code; no token is
-  ever handled by this app directly.
-- **A real embedded terminal** — a PTY-backed terminal panel (node-pty + xterm.js, the same stack VS
-  Code uses) for running your own commands alongside a session, plus a live "Agent Output" tab
-  streaming the CLI subprocess's own stderr so you can see what it's actually doing.
-- **First-run setup wizard** — detects the bundled CLI, any system-installed `copilot` on `PATH`, and
-  your system Node.js/npm versions, with a one-click "install globally" option.
-- **Configurable Copilot CLI location** — point the app at a `copilot` you installed yourself (e.g.
-  via `npm install -g @github/copilot`) instead of the bundled one. Besides preference, this also
-  sidesteps macOS Gatekeeper's quarantine flag on the app bundle, since npm-installed binaries are
-  never quarantined the way a downloaded, unsigned app is.
-- **Agent instructions editor** — a Settings panel section that reads/writes
-  `.github/copilot-instructions.md` in the current session's directory, the same repo-level rules
-  file the CLI's own `/init` command and instruction loading use.
-- **Configurable external editor** — VS Code, Cursor, Zed, Sublime, WebStorm, vim, a custom binary, or
-  the OS default, for jumping from a tool call straight into your own tools.
-- **Five themes, one token set** — Graphite, Paper, and three real GitHub/Primer palettes (GitHub
-  Dark, GitHub Dark Dimmed, GitHub Light) — all driven by the same CSS custom properties, shared
-  between the app and the marketing site, so there's exactly one place each theme's colors live.
+- **`src/main/codespaces.ts`** shells out to `gh api user/codespaces` (not `gh codespace list
+  --json`, which doesn't include the `web_url` field this app actually needs — verified against the
+  real API response before writing this) and to `gh codespace code -c <name> --web` for the
+  browser-fallback action.
+- **`src/main/terminal-manager.ts`** owns real PTY sessions per terminal tab.
+- **`src/main/db.ts`** persists just two things: UI settings (currently only theme) and the list of
+  open codespace tabs, so they're restored across restarts.
+- **`src/preload`** is the only bridge between the renderer and Node/Electron — the renderer has
+  `nodeIntegration: false` and gets exactly the typed methods on `window.copilotDesktop` defined in
+  `src/shared/ipc.ts`, nothing else. The `<webview>` tag used to embed codespaces/browsed sites is a
+  separate, isolated `webContents` with no access to that bridge.
 
 ## Repository layout
 
 ```
-src/main/       Electron main process: ACP client, agent/queue manager, db, auth, cli-locator,
-                editor launcher, environment detection, terminal manager, IPC wiring
+src/main/       Electron main process: codespaces.ts (gh CLI wrapper), terminal-manager, db, IPC wiring
 src/preload/    contextBridge API — the only surface the renderer can call into Node/Electron through
 src/renderer/   React UI (Vite-built)
 src/shared/     IPC channel names + payload types shared by main/preload/renderer
-scripts/        fetch-cli.mjs — (re-)downloads/updates the vendored CLI binaries
-resources/      Vendored copilot CLI binaries for all 4 platforms (Git LFS, see below)
 site/           Static multi-page marketing site
-test/           Vitest suites (SQLite queue behavior + integration tests against the real CLI)
-.github/        CI (lint/typecheck/test/build) and gated multi-platform release workflows
+test/           Vitest suites (db behavior + integration test against the real gh CLI) + Playwright E2E
+.github/        CI (lint/typecheck/test/e2e/build) and gated multi-platform release workflows
 ```
 
 ## Development
+
+Requires the [`gh` CLI](https://cli.github.com/) installed and signed in (`gh auth login`) to actually
+list/open codespaces — the app itself never handles GitHub credentials.
 
 ```sh
 npm install
@@ -111,30 +85,14 @@ npm run dev
 
 ### E2E tests
 
-`test/e2e/` is a real end-to-end suite (Playwright's Electron support) that launches the actual built
-app, not a mock: it drives the real first-run setup wizard, opens Settings and switches theme, opens
-the terminal panel, and asserts the app actually reaches `connected` against the real
-`copilot --acp` subprocess.
+`test/e2e/` launches the actual built app via Playwright's Electron support and drives it through the
+real UI — the empty state, the codespace picker (against whatever `gh` account is signed in on the
+machine running the suite), the terminal panel, the theme menu, and the Right Shift quick-browse
+toggle.
 
 ```sh
 npm run build
 npm run test:e2e
-```
-
-Nothing else is required for a fresh clone — the CLI binaries for all 4 platforms
-(`darwin-arm64`/`darwin-x64`/`win32-x64`/`linux-x64`) are vendored directly in this repo under
-`resources/copilot-cli/` via **Git LFS**, so `git clone` (with LFS support) gets you a fully working
-dev environment with no separate download step. If you don't already have Git LFS, install it once
-(`git lfs install`) before cloning, or run `git lfs pull` after a plain clone.
-
-To update the vendored binaries to a newer published CLI version:
-
-```sh
-npm run fetch-cli darwin-arm64
-npm run fetch-cli darwin-x64
-npm run fetch-cli win32-x64
-npm run fetch-cli linux-x64
-git add resources/copilot-cli && git commit -m "chore: update vendored copilot CLI"
 ```
 
 ### Native modules
@@ -154,16 +112,13 @@ npx electron-builder --mac|--win|--linux
 ```
 
 `electron-builder.yml`'s `asarUnpack: ['**/*.node']` is required — without it, native addons end up
-packed inside `app.asar`, which Electron cannot `dlopen` (a real bug this project hit and fixed; see
-git history). Each platform's installer bundles only its own vendored CLI binary via `extraResources`.
+packed inside `app.asar`, which Electron cannot `dlopen`.
 
 See [`.github/workflows/release.yml`](.github/workflows/release.yml) for the automated multi-platform
 release pipeline (tag-push or manual-dispatch only — never on a plain push to `main`, so the scarce
 macOS runners aren't queued for every commit). All three platform jobs upload build artifacts, and a
-single final job creates the GitHub Release with everything attached — building and publishing
-per-platform independently is a real race condition (multiple parallel `--publish always` calls can
-create separate fragmented draft releases for the same tag), which this pipeline avoids by publishing
-exactly once after all builds finish.
+single final job creates the GitHub Release with everything attached, avoiding the race condition of
+each platform job publishing independently.
 
 ## Troubleshooting
 
@@ -171,28 +126,17 @@ exactly once after all builds finish.
   (that requires a paid Apple Developer Program membership this project doesn't have), so Gatekeeper
   blocks it the same way it would any unsigned download. Open **System Settings → Privacy & Security**
   → scroll down → **"Open Anyway"**, or run `xattr -cr /path/to/Copilot Desktop.app` in Terminal. This
-  is expected for unsigned open-source Mac apps generally, not specific to this one. Pointing the app
-  at a `copilot` you installed yourself (Settings → Copilot CLI location) sidesteps this for the CLI
-  binary specifically, since npm-installed binaries are never quarantined.
-- **A packaged Linux build renders a blank window** — this project hit exactly this bug: Vite marks
-  the built entry `<script>`/`<link>` tags `crossorigin`, which makes Chromium fetch them in CORS mode;
-  that fails silently under the `file://` protocol used to load the packaged renderer (no dev server,
-  no CORS headers). `electron.vite.config.ts` strips the attribute via a small
-  `transformIndexHtml` plugin.
+  is expected for unsigned open-source Mac apps generally, not specific to this one.
+- **The codespace picker shows an error instead of a list** — make sure `gh auth status` succeeds in
+  a normal terminal on the same machine. The app shells out to your existing `gh` session; it doesn't
+  do its own GitHub authentication.
+
+## License
+
+Copilot Desktop's own source code is MIT licensed — see [`LICENSE`](LICENSE).
 
 ## Site
 
 `site/` is a static multi-page marketing site (`index.html`, `features.html`, `preview.html`,
 `faq.html`, `download.html`, `docs.html`), sharing the app's design tokens (`styles.css`) and theme
 toggle (`theme.js`).
-
-## License
-
-Copilot Desktop's own source code is MIT licensed — see [`LICENSE`](LICENSE).
-
-The vendored `copilot`/`copilot.exe` binaries under `resources/copilot-cli/` are **not** covered by
-that license. They're the official, unmodified GitHub Copilot CLI, proprietary software owned by
-GitHub and distributed here under the terms of its own license — see
-[`resources/copilot-cli/LICENSE.md`](resources/copilot-cli/LICENSE.md) (the exact, unmodified text
-shipped with the published `@github/copilot` npm package), which is also bundled inside every
-packaged installer alongside the binary it covers, as its redistribution terms require.

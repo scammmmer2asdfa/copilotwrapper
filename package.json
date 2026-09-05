@@ -20,7 +20,6 @@
     "lint": "eslint . --ext .ts,.tsx",
     "test": "cross-env ELECTRON_RUN_AS_NODE=1 electron ./node_modules/vitest/vitest.mjs run",
     "test:e2e": "playwright test",
-    "fetch-cli": "node scripts/fetch-cli.mjs",
     "dist": "npm run build && electron-builder --config electron-builder.yml"
   },
   "dependencies": {
@@ -49,7 +48,6 @@
     "eslint-plugin-react-hooks": "^4.6.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "tar": "^7.4.3",
     "typescript": "^5.5.4",
     "vite": "^5.4.8",
     "vitest": "^2.1.2"
