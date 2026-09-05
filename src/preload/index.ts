@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { IPC, type CodespaceSummary, type CodespaceTab } from '../shared/ipc.js';
+import { IPC, type Tab } from '../shared/ipc.js';
 
 const api = {
   settings: {
@@ -7,16 +7,11 @@ const api = {
     set: (key: string, value: string) => ipcRenderer.invoke(IPC.settingsSet, key, value)
   },
 
-  codespaces: {
-    list: () => ipcRenderer.invoke(IPC.codespacesList) as Promise<CodespaceSummary[]>,
-    open: (name: string) => ipcRenderer.invoke(IPC.codespacesOpen, name)
-  },
-
-  codespaceTabs: {
-    list: () => ipcRenderer.invoke(IPC.codespaceTabsList) as Promise<CodespaceTab[]>,
-    add: (tab: { codespaceName: string; displayName: string; repository: string; webUrl: string }) =>
-      ipcRenderer.invoke(IPC.codespaceTabsAdd, tab) as Promise<CodespaceTab>,
-    remove: (id: number) => ipcRenderer.invoke(IPC.codespaceTabsRemove, id)
+  tabs: {
+    list: () => ipcRenderer.invoke(IPC.tabsList) as Promise<Tab[]>,
+    add: (tab: { url: string; title: string }) => ipcRenderer.invoke(IPC.tabsAdd, tab) as Promise<Tab>,
+    update: (id: number, tab: { url?: string; title?: string }) => ipcRenderer.invoke(IPC.tabsUpdate, id, tab),
+    remove: (id: number) => ipcRenderer.invoke(IPC.tabsRemove, id)
   },
 
   terminal: {

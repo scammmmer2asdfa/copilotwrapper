@@ -7,12 +7,10 @@ export const IPC = {
   settingsGetAll: 'settings:get-all',
   settingsSet: 'settings:set',
 
-  codespacesList: 'codespaces:list',
-  codespacesOpen: 'codespaces:open',
-
-  codespaceTabsList: 'codespace-tabs:list',
-  codespaceTabsAdd: 'codespace-tabs:add',
-  codespaceTabsRemove: 'codespace-tabs:remove',
+  tabsList: 'tabs:list',
+  tabsAdd: 'tabs:add',
+  tabsUpdate: 'tabs:update',
+  tabsRemove: 'tabs:remove',
 
   terminalCreate: 'terminal:create',
   terminalWrite: 'terminal:write',
@@ -22,21 +20,13 @@ export const IPC = {
   terminalExit: 'terminal:exit'
 } as const;
 
-export interface CodespaceSummary {
-  name: string;
-  displayName: string;
-  repository: string;
-  state: string;
-  lastUsedAt: string;
-  webUrl: string;
-}
+/** The default landing page for a new tab — signing into github.com here is all the app needs; no CLI required. */
+export const DEFAULT_TAB_URL = 'https://github.com/codespaces';
 
-export interface CodespaceTab {
+export interface Tab {
   id: number;
-  codespaceName: string;
-  displayName: string;
-  repository: string;
-  webUrl: string;
+  url: string;
+  title: string;
   position: number;
   createdAt: number;
 }

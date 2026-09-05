@@ -12,9 +12,9 @@ let userDataDir: string;
 /**
  * Real E2E tests against the actual built app (npm run build first), driven
  * through the genuine Electron process via Playwright's Electron support.
- * The `gh` CLI on a CI runner isn't authenticated as a real user, so
- * codespace-listing assertions only check the picker handles that
- * gracefully (loading -> some non-loading state), not specific real data.
+ * Tabs load real github.com pages, so these tests don't assume the runner
+ * is signed in — they only assert the tab/webview mechanics, not that a
+ * real codespace can be opened.
  */
 test.beforeAll(async () => {
   test.skip(!existsSync(BUILT_MAIN), 'Run `npm run build` before the e2e suite (out/main/index.js not found)');
@@ -34,31 +34,19 @@ test.afterAll(async () => {
 });
 
 test.describe.serial('Copilot Desktop (Codespaces shell)', () => {
-  test('shows the empty state with no codespaces open', async () => {
-    await expect(window.getByText('No codespaces open.')).toBeVisible();
-    await expect(window.locator('.app__empty').getByRole('button', { name: 'Open a codespace' })).toBeVisible();
+  test('shows the empty state with no tabs open', async () => {
+    await expect(window.getByText('No tabs open.')).toBeVisible();
+    await expect(window.locator('.app__empty').getByRole('button', { name: 'Sign in to github.com' })).toBeVisible();
   });
 
-  test('opens the codespace picker and it resolves out of the loading state', async () => {
+  test('clicking + opens a new tab pointed at github.com', async () => {
     await window.locator('.icon-rail__new').click();
-    await expect(window.getByRole('heading', { name: 'Open a Codespace' })).toBeVisible();
-    await expect(window.getByText('Loading your codespaces…')).toBeHidden({ timeout: 15000 });
-    await window.screenshot({ path: 'test-results/screenshots/01-codespace-picker.png' });
-  });
-
-  test('opening a codespace (if any are available) adds a tab', async () => {
-    const openButton = window.locator('.codespace-picker__list button', { hasText: 'Open' }).first();
-    if ((await openButton.count()) === 0) {
-      // Dismiss the picker before skipping so it doesn't block later tests
-      // (they share the same window via test.describe.serial).
-      await window.keyboard.press('Escape');
-      await expect(window.locator('.modal--codespaces')).toBeHidden();
-      test.skip(true, 'no real codespaces available to this gh account in this environment');
-    }
-    await openButton.click();
     await expect(window.locator('.icon-rail__item')).toHaveCount(1);
-    await expect(window.locator('.codespace-view webview')).toHaveCount(1);
-    await window.screenshot({ path: 'test-results/screenshots/02-codespace-tab.png' });
+
+    const webview = window.locator('.tab-view webview');
+    await expect(webview).toHaveCount(1);
+    await expect(webview).toHaveAttribute('src', /^https:\/\/github\.com/);
+    await window.screenshot({ path: 'test-results/screenshots/01-github-tab.png' });
   });
 
   test('opens the terminal panel and closes it', async () => {

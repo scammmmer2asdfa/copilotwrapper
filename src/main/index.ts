@@ -2,7 +2,6 @@ import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import { join } from 'node:path';
 import { openDatabase, type AppDatabase } from './db.js';
 import { TerminalManager } from './terminal-manager.js';
-import { listCodespaces, openCodespace } from './codespaces.js';
 import { IPC } from '../shared/ipc.js';
 
 let mainWindow: BrowserWindow | null = null;
@@ -24,9 +23,9 @@ function createWindow(): void {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
-      // The in-app browser view for a codespace's own web editor gets its
-      // own isolated webContents with no Node access and no access to our
-      // preload API - not the renderer's main webContents.
+      // Each tab's <webview> (github.com, a codespace's own editor, etc.)
+      // gets its own isolated webContents with no Node access and no
+      // access to our preload API - not the renderer's main webContents.
       webviewTag: true
     }
   });
@@ -48,16 +47,10 @@ function registerIpcHandlers(): void {
   ipcMain.handle(IPC.settingsGetAll, async () => db.allSettings());
   ipcMain.handle(IPC.settingsSet, async (_e, key: string, value: string) => db.setSetting(key, value));
 
-  ipcMain.handle(IPC.codespacesList, async () => listCodespaces());
-  ipcMain.handle(IPC.codespacesOpen, async (_e, name: string) => openCodespace(name));
-
-  ipcMain.handle(IPC.codespaceTabsList, async () => db.listCodespaceTabs());
-  ipcMain.handle(
-    IPC.codespaceTabsAdd,
-    async (_e, tab: { codespaceName: string; displayName: string; repository: string; webUrl: string }) =>
-      db.addCodespaceTab(tab)
-  );
-  ipcMain.handle(IPC.codespaceTabsRemove, async (_e, id: number) => db.removeCodespaceTab(id));
+  ipcMain.handle(IPC.tabsList, async () => db.listTabs());
+  ipcMain.handle(IPC.tabsAdd, async (_e, tab: { url: string; title: string }) => db.addTab(tab));
+  ipcMain.handle(IPC.tabsUpdate, async (_e, id: number, tab: { url?: string; title?: string }) => db.updateTab(id, tab));
+  ipcMain.handle(IPC.tabsRemove, async (_e, id: number) => db.removeTab(id));
 
   ipcMain.handle(IPC.terminalCreate, async (_e, id: string, cwd: string, cols: number, rows: number) =>
     terminals.create(id, cwd, cols, rows)
@@ -87,9 +80,9 @@ app.on('window-all-closed', () => {
 
 app.on('web-contents-created', (_e, contents) => {
   // Only intercept new-window attempts from our own renderer's main
-  // webContents (e.g. a normal <a target="_blank">) - the codespace
-  // <webview>'s own navigation is handled by the webview itself and should
-  // not be redirected out to the OS browser.
+  // webContents (e.g. a normal <a target="_blank">) - each tab's own
+  // <webview> handles its own navigation and should not be redirected out
+  // to the OS browser.
   if (contents.getType() !== 'webview') {
     contents.setWindowOpenHandler(({ url }) => {
       shell.openExternal(url);

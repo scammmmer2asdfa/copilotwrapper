@@ -104,11 +104,11 @@
   background: var(--bg-raised);
 }
 
-.codespace-view {
+.tab-view {
   height: 100%;
 }
 
-.codespace-view__webview,
+.tab-view__webview,
 .quick-browse__webview {
   width: 100%;
   height: 100%;
@@ -135,12 +135,6 @@
   max-width: 480px;
 }
 
-.modal--codespaces {
-  min-width: 480px;
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
 .modal--browse {
   width: 90vw;
   height: 85vh;
@@ -161,58 +155,6 @@
   gap: 8px;
   justify-content: flex-end;
   margin-top: 16px;
-}
-
-.codespace-picker__list {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.codespace-picker__list li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-
-.codespace-picker__info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.codespace-picker__repo {
-  color: var(--fg-muted);
-  font-size: 12px;
-}
-
-.status-pill {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  border: 1px solid var(--border);
-  width: fit-content;
-}
-
-.status-pill--connected {
-  color: var(--success);
-  border-color: var(--success);
-}
-
-.status-pill--disconnected {
-  color: var(--fg-muted);
-}
-
-.auth-panel__error {
-  color: var(--danger);
-  font-size: 13px;
 }
 
 .quick-browse__bar {

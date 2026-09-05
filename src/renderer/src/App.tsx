@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import type { CodespaceSummary, CodespaceTab } from '../../shared/ipc';
+import { DEFAULT_TAB_URL, type Tab } from '../../shared/ipc';
 import { IconRail } from './components/IconRail';
-import { CodespaceView } from './components/CodespaceView';
-import { CodespacePicker } from './components/CodespacePicker';
+import { TabView } from './components/TabView';
 import { QuickBrowsePanel } from './components/QuickBrowsePanel';
 import { BottomPanel } from './components/BottomPanel';
 import { ThemeMenu } from './components/ThemeMenu';
@@ -10,9 +9,8 @@ import type { ThemeId } from './themes';
 import './app.css';
 
 export function App(): React.JSX.Element {
-  const [tabs, setTabs] = useState<CodespaceTab[]>([]);
+  const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
   const [quickBrowseOpen, setQuickBrowseOpen] = useState(false);
   const [bottomPanelOpen, setBottomPanelOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
@@ -27,7 +25,7 @@ export function App(): React.JSX.Element {
       const settings = await window.copilotDesktop.settings.getAll();
       if (settings['theme']) setTheme(settings['theme'] as ThemeId);
 
-      const existing = await window.copilotDesktop.codespaceTabs.list();
+      const existing = await window.copilotDesktop.tabs.list();
       setTabs(existing);
       if (existing.length > 0) setActiveId(existing[0].id);
     })();
@@ -61,21 +59,15 @@ export function App(): React.JSX.Element {
     void window.copilotDesktop.settings.set('theme', next);
   }, []);
 
-  const handleAddCodespace = useCallback(async (codespace: CodespaceSummary) => {
-    const tab = await window.copilotDesktop.codespaceTabs.add({
-      codespaceName: codespace.name,
-      displayName: codespace.displayName,
-      repository: codespace.repository,
-      webUrl: codespace.webUrl
-    });
+  const handleNewTab = useCallback(async () => {
+    const tab = await window.copilotDesktop.tabs.add({ url: DEFAULT_TAB_URL, title: 'GitHub' });
     setTabs((prev) => [...prev, tab]);
     setActiveId(tab.id);
-    setPickerOpen(false);
   }, []);
 
   const handleCloseTab = useCallback(
     async (id: number) => {
-      await window.copilotDesktop.codespaceTabs.remove(id);
+      await window.copilotDesktop.tabs.remove(id);
       setTabs((prev) => {
         const next = prev.filter((t) => t.id !== id);
         if (activeId === id) setActiveId(next.length > 0 ? next[0].id : null);
@@ -85,6 +77,13 @@ export function App(): React.JSX.Element {
     [activeId]
   );
 
+  // Persisted so relaunching the app resumes each tab where it was left,
+  // e.g. inside a codespace's own editor rather than back at github.com.
+  const handleNavigate = useCallback((id: number, url: string, title: string) => {
+    setTabs((prev) => prev.map((t) => (t.id === id ? { ...t, url, title } : t)));
+    void window.copilotDesktop.tabs.update(id, { url, title });
+  }, []);
+
   return (
     <div className="app">
       <div className="app__main">
@@ -93,7 +92,7 @@ export function App(): React.JSX.Element {
           activeId={activeId}
           onSelect={setActiveId}
           onClose={(id) => void handleCloseTab(id)}
-          onNew={() => setPickerOpen(true)}
+          onNew={() => void handleNewTab()}
           onToggleTerminal={() => setBottomPanelOpen((v) => !v)}
           onToggleTheme={() => setThemeMenuOpen((v) => !v)}
         />
@@ -101,22 +100,25 @@ export function App(): React.JSX.Element {
         <div className="app__content">
           {tabs.length === 0 && (
             <div className="app__empty">
-              <p>No codespaces open.</p>
-              <button className="button--primary" onClick={() => setPickerOpen(true)}>
-                Open a codespace
+              <p>No tabs open.</p>
+              <button className="button--primary" onClick={() => void handleNewTab()}>
+                Sign in to github.com
               </button>
               <p className="settings-hint">Or press Right Shift to browse any URL in-app.</p>
             </div>
           )}
           {tabs.map((t) => (
-            <CodespaceView key={t.id} webUrl={t.webUrl} visible={t.id === activeId} />
+            <TabView
+              key={t.id}
+              url={t.url}
+              visible={t.id === activeId}
+              onNavigate={(url, title) => handleNavigate(t.id, url, title)}
+            />
           ))}
         </div>
       </div>
 
       {bottomPanelOpen && <BottomPanel onClose={() => setBottomPanelOpen(false)} />}
-
-      {pickerOpen && <CodespacePicker onAdd={(c) => void handleAddCodespace(c)} onClose={() => setPickerOpen(false)} />}
 
       {quickBrowseOpen && <QuickBrowsePanel onClose={() => setQuickBrowseOpen(false)} />}
 

@@ -68,10 +68,10 @@ jobs:
       - name: Build
         run: npm run build
 
-      # Playwright drives the real, built Electron app (not a mock) -
-      # launches it and clicks through the UI. The gh CLI on this runner
-      # isn't authenticated as a real user, so codespace-listing assertions
-      # only check that the picker handles that gracefully, not real data.
+      # Playwright drives the real, built Electron app (not a mock) - launches
+      # it and clicks through the UI. Tabs load real github.com pages, but
+      # these assertions only check the tab/webview mechanics, not that the
+      # runner is signed into a real GitHub account.
       # Needs a virtual display since Electron isn't truly headless.
       - name: Run Playwright E2E suite
         run: xvfb-run -a npx playwright test

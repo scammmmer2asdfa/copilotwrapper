@@ -1,11 +1,9 @@
 import Database from 'better-sqlite3';
 
-export interface CodespaceTabRow {
+export interface TabRow {
   id: number;
-  codespaceName: string;
-  displayName: string;
-  repository: string;
-  webUrl: string;
+  url: string;
+  title: string;
   position: number;
   createdAt: number;
 }
@@ -16,35 +14,17 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS codespace_tabs (
+CREATE TABLE IF NOT EXISTS tabs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  codespace_name TEXT NOT NULL,
-  display_name TEXT NOT NULL,
-  repository TEXT NOT NULL,
-  web_url TEXT NOT NULL,
+  url TEXT NOT NULL,
+  title TEXT NOT NULL,
   position INTEGER NOT NULL,
   created_at INTEGER NOT NULL
 );
 `;
 
-function toTabRow(r: {
-  id: number;
-  codespace_name: string;
-  display_name: string;
-  repository: string;
-  web_url: string;
-  position: number;
-  created_at: number;
-}): CodespaceTabRow {
-  return {
-    id: r.id,
-    codespaceName: r.codespace_name,
-    displayName: r.display_name,
-    repository: r.repository,
-    webUrl: r.web_url,
-    position: r.position,
-    createdAt: r.created_at
-  };
+function toTabRow(r: { id: number; url: string; title: string; position: number; created_at: number }): TabRow {
+  return { id: r.id, url: r.url, title: r.title, position: r.position, createdAt: r.created_at };
 }
 
 export class AppDatabase {
@@ -70,36 +50,30 @@ export class AppDatabase {
     return out;
   }
 
-  /** Open codespace tabs, restored across restarts, in the order they were opened. */
-  listCodespaceTabs(): CodespaceTabRow[] {
-    const rows = this.raw
-      .prepare('SELECT * FROM codespace_tabs ORDER BY position ASC')
-      .all() as Parameters<typeof toTabRow>[0][];
+  /** Open tabs, restored across restarts, in the order they were opened. */
+  listTabs(): TabRow[] {
+    const rows = this.raw.prepare('SELECT * FROM tabs ORDER BY position ASC').all() as Parameters<typeof toTabRow>[0][];
     return rows.map(toTabRow);
   }
 
-  addCodespaceTab(tab: { codespaceName: string; displayName: string; repository: string; webUrl: string }): CodespaceTabRow {
+  addTab(tab: { url: string; title: string }): TabRow {
     const now = Date.now();
-    const maxPos = this.raw.prepare('SELECT MAX(position) as p FROM codespace_tabs').get() as { p: number | null };
+    const maxPos = this.raw.prepare('SELECT MAX(position) as p FROM tabs').get() as { p: number | null };
     const position = (maxPos.p ?? -1) + 1;
     const info = this.raw
-      .prepare(
-        'INSERT INTO codespace_tabs (codespace_name, display_name, repository, web_url, position, created_at) VALUES (?, ?, ?, ?, ?, ?)'
-      )
-      .run(tab.codespaceName, tab.displayName, tab.repository, tab.webUrl, position, now);
-    return {
-      id: Number(info.lastInsertRowid),
-      codespaceName: tab.codespaceName,
-      displayName: tab.displayName,
-      repository: tab.repository,
-      webUrl: tab.webUrl,
-      position,
-      createdAt: now
-    };
+      .prepare('INSERT INTO tabs (url, title, position, created_at) VALUES (?, ?, ?, ?)')
+      .run(tab.url, tab.title, position, now);
+    return { id: Number(info.lastInsertRowid), url: tab.url, title: tab.title, position, createdAt: now };
   }
 
-  removeCodespaceTab(id: number): void {
-    this.raw.prepare('DELETE FROM codespace_tabs WHERE id = ?').run(id);
+  /** Called as the user navigates within a tab's webview, so relaunching resumes where they left off. */
+  updateTab(id: number, tab: { url?: string; title?: string }): void {
+    if (tab.url !== undefined) this.raw.prepare('UPDATE tabs SET url = ? WHERE id = ?').run(tab.url, id);
+    if (tab.title !== undefined) this.raw.prepare('UPDATE tabs SET title = ? WHERE id = ?').run(tab.title, id);
+  }
+
+  removeTab(id: number): void {
+    this.raw.prepare('DELETE FROM tabs WHERE id = ?').run(id);
   }
 
   close(): void {

@@ -35,14 +35,15 @@
         </details>
         <details>
           <summary>How does it access my codespaces?</summary>
-          <p>It shells out to the real <code>gh</code> CLI (<code>gh api user/codespaces</code>), the
-            same tool you'd use in a terminal. It uses whatever account you already have signed into
-            <code>gh</code> — this app never handles a GitHub token itself.</p>
+          <p>It doesn't call any GitHub API directly. A tab loads <code>github.com/codespaces</code> in
+            an isolated Electron <code>&lt;webview&gt;</code>, you sign in there like any website, and
+            clicking a codespace navigates that same tab to its own <code>github.dev</code> editor.
+            This app never handles a GitHub token itself.</p>
         </details>
         <details>
-          <summary>Do I need the `gh` CLI installed?</summary>
-          <p>Yes, and signed in (<code>gh auth login</code>) — the codespace picker calls it directly.
-            If it's missing or unauthenticated, the picker shows that error instead of a list.</p>
+          <summary>Do I need to install anything else, like the `gh` CLI?</summary>
+          <p>No. There's no CLI to install or authenticate separately — just open the app and sign into
+            <code>github.com</code> in a tab the first time, the same as you would in any browser.</p>
         </details>
         <details>
           <summary>Is there a real terminal in the app, or just a log?</summary>

@@ -6,7 +6,7 @@
     <title>Docs — Copilot Desktop</title>
     <meta
       name="description"
-      content="How Copilot Desktop actually works: the gh CLI integration, the embedded webview, the terminal, and the security model."
+      content="How Copilot Desktop actually works: the embedded webview sign-in flow, the terminal, and the security model."
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -35,7 +35,7 @@
       </section>
 
       <nav class="docs__toc">
-        <a href="#listing">Listing codespaces</a>
+        <a href="#listing">Signing in and opening a codespace</a>
         <a href="#embedding">Embedding the editor</a>
         <a href="#terminal">Terminal</a>
         <a href="#browse">Quick browse</a>
@@ -44,25 +44,25 @@
       </nav>
 
       <section id="listing" class="docs__section">
-        <h2>Listing your codespaces</h2>
+        <h2>Signing in and opening a codespace</h2>
         <p>
-          The "+" button in the icon rail shells out to <code>gh api user/codespaces</code> — the raw
-          GitHub REST API via the <code>gh</code> CLI you already have installed and signed in. This
-          app deliberately does <strong>not</strong> use <code>gh codespace list --json</code> for
-          this, even though it's the more obvious command: that command's JSON output doesn't include
-          a <code>web_url</code> field (verified against the real CLI's own documented JSON fields
-          before writing this code), and that URL is exactly what gets embedded in the app. The raw
-          API response does include it, so that's what this app calls instead.
+          The "+" button in the icon rail opens a new tab pointed at <code>github.com/codespaces</code>
+          — an ordinary page rendered in an isolated Electron <code>&lt;webview&gt;</code>. You sign in
+          there exactly like you would in any browser (no separate app sign-in flow, no device codes,
+          no CLI). Clicking a codespace in that list navigates the same tab to that codespace's own
+          <code>github.dev</code> editor — the app just watches the webview's own
+          <code>did-navigate</code>/<code>page-title-updated</code> events to keep the tab's persisted
+          URL and title in sync, it never calls a GitHub API directly.
         </p>
       </section>
 
       <section id="embedding" class="docs__section">
         <h2>Embedding the editor directly</h2>
         <p>
-          Each codespace's <code>web_url</code> (something like
-          <code>https://&lt;codespace-name&gt;.github.dev</code>) goes straight into an Electron
-          <code>&lt;webview&gt;</code> element as a tab. That's the exact same web editor GitHub
-          serves at that URL — nothing about the editor itself is modified, proxied, or
+          Once you open a codespace from the <code>github.com/codespaces</code> list, that page
+          navigates to something like <code>https://&lt;codespace-name&gt;.github.dev</code> — all
+          inside the same Electron <code>&lt;webview&gt;</code> tab. That's the exact same web editor
+          GitHub serves at that URL — nothing about the editor itself is modified, proxied, or
           reimplemented. What's different is where it's rendered: inside a dedicated native window
           instead of a browser tab, so the browser's own reserved keyboard shortcuts never get a
           chance to intercept a keystroke meant for the editor.
@@ -103,11 +103,13 @@
           <code>contextIsolation: true</code>. It has no direct access to Node.js, Electron internals,
           or the filesystem — every capability it has is a specific, typed method exposed through
           <code>contextBridge</code> in <code>src/preload/index.ts</code>, backed by an explicit IPC
-          channel list in <code>src/shared/ipc.ts</code> (listing/opening codespaces, the terminal,
-          settings). The <code>&lt;webview&gt;</code> tags used for codespace tabs and the quick
-          browser are separate, isolated <code>webContents</code> with no access to that bridge and no
-          Node integration of their own — they're just displaying whatever page they're pointed at,
-          the same as a browser tab would.
+          channel list in <code>src/shared/ipc.ts</code> (listing/persisting tabs, the terminal,
+          settings). The <code>&lt;webview&gt;</code> tags used for tabs and the quick browser are
+          separate, isolated <code>webContents</code> with no access to that bridge and no Node
+          integration of their own — they're just displaying whatever page they're pointed at, the
+          same as a browser tab would. The app itself never sees, stores, or transmits your GitHub
+          credentials — signing in happens entirely inside that isolated webview, the same as signing
+          into any site in a regular browser.
         </p>
       </section>
 

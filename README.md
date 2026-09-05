@@ -1,7 +1,8 @@
 # Copilot Desktop
 
-A native Electron shell for **GitHub Codespaces**. It lists the codespaces on your GitHub account
-(via the real `gh` CLI) and opens each one's own web editor (`github.dev`) directly inside a dedicated
+A native Electron shell for **GitHub Codespaces**. Each tab is a real, isolated browser view that
+starts at `github.com/codespaces` — sign in exactly like you would in any browser, then open a
+codespace and its own web editor (`github.dev`) loads right there in the same tab, inside a dedicated
 app window instead of a browser tab — so your OS browser's own keyboard shortcuts (Ctrl+W, Ctrl+T,
 Cmd+`,`, etc.) don't intercept keystrokes meant for the editor running inside it.
 
@@ -16,10 +17,11 @@ first — keystrokes go straight to the embedded view.
 
 ## Features
 
-- **Codespace tabs** — the icon rail lists your open codespaces as tabs (persisted across restarts in
-  a local SQLite database); the `+` button opens a picker backed by the real
-  `gh api user/codespaces` call, and each tab embeds that codespace's real `web_url` directly in an
-  Electron `<webview>`.
+- **Browser tabs, not a CLI-backed picker** — the `+` button opens a new tab pointed at
+  `github.com/codespaces`. Sign in there like you would on any website (no separate app sign-in flow,
+  no device codes) and click a codespace to open it; the tab navigates straight to that codespace's
+  own `github.dev` editor. Tabs (their current URL and title) persist across restarts in a local
+  SQLite database, so relaunching resumes each tab exactly where it was left.
 - **A real embedded terminal** — a PTY-backed terminal panel (`node-pty` + `xterm.js`, the same stack
   VS Code's own integrated terminal uses) for running local commands alongside your codespace tabs,
   independent of any of them.
@@ -28,53 +30,54 @@ first — keystrokes go straight to the embedded view.
   tab. Press Right Shift again to close it.
 - **Five themes** — Graphite, Paper, and three real GitHub/Primer palettes (GitHub Dark, GitHub Dark
   Dimmed, GitHub Light).
-- **No token handling** — codespace listing and opening both shell out to the `gh` CLI you already
-  have installed and signed in; this app never sees, stores, or transmits a GitHub token itself.
+- **No CLI, no token handling** — there's nothing to install or authenticate outside the app. Signing
+  into `github.com` inside a tab uses Electron's normal persistent session/cookie storage, exactly
+  like signing into any site in a regular browser; this app never sees, stores, or transmits a GitHub
+  token itself.
 
 ## Architecture
 
 ```
 Electron main process
-  ├─ gh api user/codespaces        → list your codespaces (name, repo, state, real web_url)
-  ├─ gh codespace code -c <name> --web   → fallback: open a codespace in your OS browser
-  └─ node-pty                       → a real local shell for the terminal panel
+  ├─ db.ts (tabs + settings)  → persists each tab's url/title so restarts resume in place
+  └─ node-pty                → a real local shell for the terminal panel
 
 Electron renderer (React)
-  ├─ IconRail        — open codespace tabs, terminal toggle, theme menu
-  ├─ CodespaceView   — <webview src="https://<name>.github.dev"> per open tab
-  ├─ CodespacePicker — lists real codespaces from gh, lets you open one as a tab
+  ├─ IconRail        — open tabs, terminal toggle, theme menu
+  ├─ TabView          — <webview src={tab.url}> per open tab; tracks navigation to persist it
   ├─ QuickBrowsePanel — Right Shift; ad-hoc in-app browsing, not persisted
   └─ BottomPanel     — the real terminal (node-pty)
 ```
 
-- **`src/main/codespaces.ts`** shells out to `gh api user/codespaces` (not `gh codespace list
-  --json`, which doesn't include the `web_url` field this app actually needs — verified against the
-  real API response before writing this) and to `gh codespace code -c <name> --web` for the
-  browser-fallback action.
+- **`src/main/db.ts`** persists just two things: UI settings (currently only theme) and the open
+  tabs (`url`, `title`, order), so they're restored across restarts.
+- **`src/renderer/src/components/TabView.tsx`** listens for the `<webview>`'s own `did-navigate` /
+  `page-title-updated` events and reports them back up so the tab's persisted `url`/`title` stay in
+  sync as the user signs in, browses the codespaces list, and opens an editor — all of that happens
+  as ordinary in-page navigation inside the same webview, no custom scraping or GitHub API calls
+  involved.
 - **`src/main/terminal-manager.ts`** owns real PTY sessions per terminal tab.
-- **`src/main/db.ts`** persists just two things: UI settings (currently only theme) and the list of
-  open codespace tabs, so they're restored across restarts.
 - **`src/preload`** is the only bridge between the renderer and Node/Electron — the renderer has
   `nodeIntegration: false` and gets exactly the typed methods on `window.copilotDesktop` defined in
-  `src/shared/ipc.ts`, nothing else. The `<webview>` tag used to embed codespaces/browsed sites is a
+  `src/shared/ipc.ts`, nothing else. The `<webview>` tag used to embed tabs/browsed sites is a
   separate, isolated `webContents` with no access to that bridge.
 
 ## Repository layout
 
 ```
-src/main/       Electron main process: codespaces.ts (gh CLI wrapper), terminal-manager, db, IPC wiring
+src/main/       Electron main process: db.ts (tab persistence), terminal-manager, IPC wiring
 src/preload/    contextBridge API — the only surface the renderer can call into Node/Electron through
 src/renderer/   React UI (Vite-built)
 src/shared/     IPC channel names + payload types shared by main/preload/renderer
 site/           Static multi-page marketing site
-test/           Vitest suites (db behavior + integration test against the real gh CLI) + Playwright E2E
+test/           Vitest suites (db/tab persistence behavior) + Playwright E2E
 .github/        CI (lint/typecheck/test/e2e/build) and gated multi-platform release workflows
 ```
 
 ## Development
 
-Requires the [`gh` CLI](https://cli.github.com/) installed and signed in (`gh auth login`) to actually
-list/open codespaces — the app itself never handles GitHub credentials.
+No external CLI or credentials setup required — just sign into `github.com` inside the app the first
+time you open a tab.
 
 ```sh
 npm install
@@ -86,9 +89,9 @@ npm run dev
 ### E2E tests
 
 `test/e2e/` launches the actual built app via Playwright's Electron support and drives it through the
-real UI — the empty state, the codespace picker (against whatever `gh` account is signed in on the
-machine running the suite), the terminal panel, the theme menu, and the Right Shift quick-browse
-toggle.
+real UI — the empty state, opening a new tab pointed at `github.com`, the terminal panel, the theme
+menu, and the Right Shift quick-browse toggle. These tests don't assume the runner is signed into a
+real GitHub account; they only assert the tab/webview mechanics.
 
 ```sh
 npm run build
@@ -127,9 +130,9 @@ each platform job publishing independently.
   blocks it the same way it would any unsigned download. Open **System Settings → Privacy & Security**
   → scroll down → **"Open Anyway"**, or run `xattr -cr /path/to/Copilot Desktop.app` in Terminal. This
   is expected for unsigned open-source Mac apps generally, not specific to this one.
-- **The codespace picker shows an error instead of a list** — make sure `gh auth status` succeeds in
-  a normal terminal on the same machine. The app shells out to your existing `gh` session; it doesn't
-  do its own GitHub authentication.
+- **A tab keeps showing the GitHub sign-in page** — sign in normally in that tab; the session is
+  stored the same way a regular browser stores cookies, so you shouldn't need to sign in again on
+  future launches unless you sign out or clear the app's data.
 
 ## License
 

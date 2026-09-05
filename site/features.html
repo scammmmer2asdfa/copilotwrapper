@@ -33,11 +33,11 @@
 
       <section id="features" class="features">
         <div class="feature">
-          <h3>Real codespace tabs</h3>
+          <h3>Real browser tabs, no CLI</h3>
           <p>
-            The icon rail lists your open codespaces as tabs, persisted across restarts. The `+`
-            button opens a picker backed by the real <code>gh api user/codespaces</code> call — not a
-            mock, not cached data.
+            The `+` button opens a new tab at <code>github.com/codespaces</code> — sign in like any
+            website, click a codespace, and that same tab navigates straight to its editor. Tabs
+            persist across restarts.
           </p>
         </div>
         <div class="feature">
@@ -64,10 +64,11 @@
           </p>
         </div>
         <div class="feature">
-          <h3>No token handling</h3>
+          <h3>No CLI, no token handling</h3>
           <p>
-            Listing and opening codespaces both shell out to the <code>gh</code> CLI you already have
-            signed in. This app never sees, stores, or transmits a GitHub token itself.
+            Signing in happens inside an isolated <code>&lt;webview&gt;</code>, exactly like signing
+            into any site in a regular browser. This app never sees, stores, or transmits a GitHub
+            token itself.
           </p>
         </div>
         <div class="feature">
@@ -85,17 +86,17 @@
           <li>
             <span class="steps__index">1</span>
             <div>
-              <h4>Ask <code>gh</code> for your codespaces</h4>
+              <h4>Open a tab at github.com</h4>
               <p>
-                <code>gh api user/codespaces</code> returns each codespace's name, repository,
-                state, and — the important part — its real <code>web_url</code>.
+                The "+" button opens a new tab pointed at <code>github.com/codespaces</code>. Sign in
+                there like you would on any site — no CLI, no device code.
               </p>
             </div>
           </li>
           <li>
             <span class="steps__index">2</span>
             <div>
-              <h4>Embed it directly</h4>
+              <h4>Click a codespace, it just navigates</h4>
               <p>
                 That URL goes straight into an Electron <code>&lt;webview&gt;</code> as a new tab —
                 the exact same editor github.dev serves, just inside a native window.
