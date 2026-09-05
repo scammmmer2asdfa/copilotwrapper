@@ -47,6 +47,12 @@ test.describe.serial('Copilot Desktop (Codespaces shell)', () => {
     await expect(webview).toHaveCount(1);
     await expect(webview).toHaveAttribute('src', /^https:\/\/github\.com/);
     await window.screenshot({ path: 'test-results/screenshots/01-github-tab.png' });
+
+    // Close it right away - a real, live github.com page kept open in the
+    // background (analytics beacons, websockets, etc.) can otherwise keep
+    // the Electron process from shutting down cleanly at the end of the run.
+    await window.locator('.icon-rail__tab-close').click();
+    await expect(window.locator('.icon-rail__item')).toHaveCount(0);
   });
 
   test('opens the terminal panel and closes it', async () => {
