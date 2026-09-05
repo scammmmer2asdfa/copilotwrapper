@@ -49,6 +49,10 @@ test.describe.serial('Copilot Desktop (Codespaces shell)', () => {
   test('opening a codespace (if any are available) adds a tab', async () => {
     const openButton = window.locator('.codespace-picker__list button', { hasText: 'Open' }).first();
     if ((await openButton.count()) === 0) {
+      // Dismiss the picker before skipping so it doesn't block later tests
+      // (they share the same window via test.describe.serial).
+      await window.keyboard.press('Escape');
+      await expect(window.locator('.modal--codespaces')).toBeHidden();
       test.skip(true, 'no real codespaces available to this gh account in this environment');
     }
     await openButton.click();
