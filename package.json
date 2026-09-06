@@ -1,6 +1,6 @@
 {
   "name": "copilot-desktop",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "A native Electron shell for GitHub Codespaces",
   "main": "out/main/index.js",
   "private": true,
