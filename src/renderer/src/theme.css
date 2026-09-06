@@ -74,6 +74,21 @@
   --success: #1a7f37;
 }
 
+/* VS Code's built-in Dark+ theme colors (dark-plus-syntax, MIT). */
+[data-theme='dark-plus'] {
+  --bg: #1e1e1e;
+  --bg-raised: #252526;
+  --bg-sunken: #181818;
+  --border: #404040;
+  --fg: #d4d4d4;
+  --fg-muted: #808080;
+  --accent: #007acc;
+  --accent-fg: #ffffff;
+  --danger: #d16969;
+  --warning: #d7ba7d;
+  --success: #608b4e;
+}
+
 * {
   box-sizing: border-box;
 }
