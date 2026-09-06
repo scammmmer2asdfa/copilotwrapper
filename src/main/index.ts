@@ -60,6 +60,14 @@ function registerIpcHandlers(): void {
   ipcMain.on(IPC.terminalKill, (_e, id: string) => terminals.kill(id));
   terminals.on('data', (id, chunk) => send(IPC.terminalData, id, chunk));
   terminals.on('exit', (id, code) => send(IPC.terminalExit, id, code));
+
+  ipcMain.handle(IPC.shellOpenExternal, async (_e, url: string) => {
+    // Only ever hand http(s) URLs to the OS - never file:/custom schemes
+    // requested by a compromised renderer.
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return;
+    await shell.openExternal(url);
+  });
 }
 
 app.whenReady().then(() => {

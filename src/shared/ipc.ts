@@ -17,7 +17,9 @@ export const IPC = {
   terminalResize: 'terminal:resize',
   terminalKill: 'terminal:kill',
   terminalData: 'terminal:data',
-  terminalExit: 'terminal:exit'
+  terminalExit: 'terminal:exit',
+
+  shellOpenExternal: 'shell:open-external'
 } as const;
 
 /** The default landing page for a new tab — signing into github.com here is all the app needs; no CLI required. */

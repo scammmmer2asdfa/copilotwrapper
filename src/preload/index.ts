@@ -14,6 +14,10 @@ const api = {
     remove: (id: number) => ipcRenderer.invoke(IPC.tabsRemove, id)
   },
 
+  shell: {
+    openExternal: (url: string) => ipcRenderer.invoke(IPC.shellOpenExternal, url) as Promise<void>
+  },
+
   terminal: {
     create: (id: string, cwd: string, cols: number, rows: number) =>
       ipcRenderer.invoke(IPC.terminalCreate, id, cwd, cols, rows),

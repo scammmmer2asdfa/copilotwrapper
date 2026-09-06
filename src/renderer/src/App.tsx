@@ -104,6 +104,9 @@ export function App(): React.JSX.Element {
               <button className="button--primary" onClick={() => void handleNewTab()}>
                 Sign in to github.com
               </button>
+              <button onClick={() => void window.copilotDesktop.shell.openExternal(DEFAULT_TAB_URL)}>
+                Open in browser instead
+              </button>
               <p className="settings-hint">Or press Right Shift to browse any URL in-app.</p>
             </div>
           )}
